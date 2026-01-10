@@ -17,13 +17,28 @@ from contextlib import contextmanager
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import uvicorn
+
+import os
+import socket
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
 # Configuration
 PROJECT_ROOT = Path(__file__).parent.parent
 DB_PATH = PROJECT_ROOT / "data" / "backlog" / "backlog.db"
-PORT = 8765
+LOG_DIR = PROJECT_ROOT / "data" / "logs"
+PORT = int(os.getenv("BACKLOG_API_PORT", 8765))
+HOST = os.getenv("BACKLOG_API_HOST", "127.0.0.1")
+
+def is_port_in_use(port):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(('127.0.0.1', port)) == 0
 
 app = FastAPI(
     title="Backlog API",
@@ -37,6 +52,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Static Files
+STATIC_DIR = PROJECT_ROOT / "static"
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
 
 # Models
 class BacklogItemCreate(BaseModel):
@@ -100,7 +121,17 @@ def log_event(conn, item_id: int, external_id: str, event_type: str, event_data:
 # API Endpoints
 
 @app.get("/")
-def root():
+def serve_dashboard():
+    """Serve the management dashboard."""
+    if STATIC_DIR.exists():
+        return FileResponse(STATIC_DIR / "index.html")
+    return {
+        "message": "Dashboard not found. Static files missing.",
+        "api_info": "/api/info"
+    }
+
+@app.get("/api/info")
+def api_info():
     """API info."""
     return {
         "name": "Backlog API",
@@ -352,6 +383,27 @@ def get_item_events(external_id: str):
         return [dict(row) for row in cursor.fetchall()]
 
 if __name__ == "__main__":
-    print(f"Starting Backlog API on http://localhost:{PORT}")
-    print(f"Database: {DB_PATH}")
-    uvicorn.run(app, host="0.0.0.0", port=PORT)
+    try:
+        # Ensure log directory exists
+        LOG_DIR.mkdir(parents=True, exist_ok=True)
+        
+        print(f"========================================")
+        print(f" Starting Backlog API")
+        print(f" URL: http://{HOST}:{PORT}")
+        print(f" Database: {DB_PATH}")
+        print(f"========================================")
+        
+        if is_port_in_use(PORT):
+            print(f"CRITICAL ERROR: Port {PORT} is already in use!")
+            print(f"Please change BACKLOG_API_PORT in your .env file.")
+            sys.exit(1)
+            
+        if not DB_PATH.exists():
+            print(f"WARNING: Database file not found at {DB_PATH}")
+            print(f"Please run init_database.py first.")
+            
+        uvicorn.run(app, host=HOST, port=PORT, log_level="info")
+    except Exception as e:
+        print(f"FATAL ERROR during startup: {e}")
+        import traceback
+        traceback.print_exc()

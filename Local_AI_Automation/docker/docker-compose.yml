@@ -6,12 +6,12 @@ services:
     container_name: n8n
     restart: unless-stopped
     ports:
-      - "5678:5678"
+      - "${N8N_PORT:-5678}:5678"
     environment:
       - N8N_HOST=localhost
-      - N8N_PORT=5678
+      - N8N_PORT=${N8N_PORT:-5678}
       - N8N_PROTOCOL=http
-      - WEBHOOK_URL=http://localhost:5678/
+      - WEBHOOK_URL=http://localhost:${N8N_PORT:-5678}/
       - GENERIC_TIMEZONE=Europe/Stockholm
       - TZ=Europe/Stockholm
       # Database (PostgreSQL for reliability)
@@ -53,7 +53,7 @@ services:
     networks:
       - automation-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U n8n"]
+      test: [ "CMD-SHELL", "pg_isready -U n8n" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -61,6 +61,7 @@ services:
 volumes:
   n8n_data:
   n8n_db_data:
+
 
 networks:
   automation-net:

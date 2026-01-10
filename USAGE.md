@@ -4,9 +4,12 @@
 
 After installation, your local AI stack is ready to use:
 
-1. **Open WebUI** (ChatGPT-like interface): http://localhost:3000
-2. **Langflow** (Visual workflow builder): http://localhost:7860
-3. **Ollama API** (Direct API access): http://localhost:11434
+1. **Hub Dashboard** (Central Management): http://localhost:8765
+2. **Open WebUI** (ChatGPT-like interface): http://localhost:3000 (Default)
+3. **Langflow** (Visual workflow builder): http://localhost:7860 (Default)
+4. **Ollama API** (Direct API access): http://localhost:11434 (Default)
+
+*Note: If you have port conflicts, you can change these in the `.env` file at the root of the project.*
 
 ## Starting Services
 
@@ -19,6 +22,17 @@ After installation, your local AI stack is ready to use:
    docker compose -f D:\SHARED\AI_Models\SETUP\docker-compose.yml up -d
    ```
 4. **Ollama starts automatically** with Windows (or run `ollama serve`)
+
+### Port Configuration
+If you have other applications running on the same machine that use these ports, you can modify them in the `.env` file:
+```env
+OPEN_WEBUI_PORT=3000
+N8N_PORT=5678
+LANGFLOW_PORT=7860
+BACKLOG_API_PORT=8765
+OLLAMA_PORT=11434
+```
+After changing ports in `.env`, restart the services for the changes to take effect.
 
 ### Quick Start Script
 

@@ -6,7 +6,7 @@ services:
     container_name: open-webui
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3000:8080"
+      - "127.0.0.1:${OPEN_WEBUI_PORT:-3000}:8080"
     environment:
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
       - WEBUI_AUTH=false
@@ -20,7 +20,7 @@ services:
     container_name: langflow
     restart: unless-stopped
     ports:
-      - "127.0.0.1:7860:7860"
+      - "127.0.0.1:${LANGFLOW_PORT:-7860}:7860"
     environment:
       - LANGFLOW_DATABASE_URL=postgresql://langflow:langflow@langflow-db:5432/langflow
       - LANGFLOW_CONFIG_DIR=/app/langflow

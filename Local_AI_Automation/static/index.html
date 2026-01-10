@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TR Local AI Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0d0e12;
+            --card-bg: rgba(30, 32, 40, 0.7);
+            --accent-primary: #6366f1;
+            --accent-secondary: #a855f7;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --success: #22c55e;
+            --warning: #eab308;
+            --danger: #ef4444;
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.15) 0, transparent 50%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 99px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            background: var(--card-bg);
+            border: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-primary);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+        }
+
+        .indicator.on { background: var(--success); box-shadow: 0 0 10px var(--success); }
+        .indicator.off { background: var(--danger); }
+        .indicator.wait { background: var(--warning); }
+
+        .service-info {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.6rem 1.2rem;
+            border-radius: 0.75rem;
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.1);
+            transform: scale(1.02);
+        }
+
+        .backlog-section {
+            margin-top: 4rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            background: var(--card-bg);
+            border-radius: 1rem;
+            overflow: hidden;
+        }
+
+        th {
+            text-align: left;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            font-weight: 400;
+            font-size: 0.875rem;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .priority-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .p0 { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+        .p1 { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .p2 { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .p3 { background: rgba(148, 163, 184, 0.2); color: #94a3b8; }
+
+        .refresh-btn {
+            background: none;
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+        }
+
+        footer {
+            margin-top: 4rem;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>TR Local AI Hub</h1>
+                <p style="color: var(--text-secondary)">Unified Management Dashboard</p>
+            </div>
+            <button class="refresh-btn" onclick="refreshAll()">↻ Refresh All</button>
+        </header>
+
+        <div class="grid" id="service-grid">
+            <!-- Services injected here -->
+        </div>
+
+        <div class="backlog-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2>Active Backlog</h2>
+                <a href="#" class="btn btn-primary" onclick="alert('Coming soon: Add item via UI')">+ New Item</a>
+            </div>
+            <div style="overflow-x: auto;">
+                <table id="backlog-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Priority</th>
+                            <th>Title</th>
+                            <th>Category</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="backlog-body">
+                        <!-- Items injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <footer>
+            TR Local AI Automation Stack &bull; Fully Local &bull; Private &bull; Secure
+        </footer>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        async function fetchStats() {
+            try {
+                const response = await fetch(`${API_BASE}/stats`);
+                return await response.json();
+            } catch (e) {
+                console.error("Failed to fetch statistics", e);
+                return null;
+            }
+        }
+
+        async function fetchItems() {
+            try {
+                const response = await fetch(`${API_BASE}/items?limit=10&status=open`);
+                return await response.json();
+            } catch (e) {
+                console.error("Failed to fetch backlog items", e);
+                return [];
+            }
+        }
+
+        async function checkHealth(url) {
+            try {
+                const controller = new AbortController();
+                const id = setTimeout(() => controller.abort(), 2000);
+                const response = await fetch(url, { signal: controller.signal, mode: 'no-cors' });
+                clearTimeout(id);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        async function refreshAll() {
+            updateBacklog();
+            // In a real app we'd ping each service from the server or here
+        }
+
+        async function updateBacklog() {
+            const items = await fetchItems();
+            const body = document.getElementById('backlog-body');
+            body.innerHTML = '';
+            
+            items.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><code>${item.external_id}</code></td>
+                    <td><span class="priority-badge ${item.priority.toLowerCase()}">${item.priority}</span></td>
+                    <td>${item.title}</td>
+                    <td style="color: var(--text-secondary); font-size: 0.85rem;">${item.category}</td>
+                    <td>${item.status}</td>
+                `;
+                body.appendChild(row);
+            });
+        }
+
+        // Mock service data for demo - in reality, server would provide this
+        const services = [
+            { name: "Ollama", port: 11434, path: "/api/tags", url: "http://localhost:11434" },
+            { name: "Open WebUI", port: 3000, path: "/", url: "http://localhost:3000" },
+            { name: "n8n", port: 5678, path: "/healthz", url: "http://localhost:5678" },
+            { name: "Backlog API", port: 8765, path: "/health", url: "http://localhost:8765" },
+            { name: "Langflow", port: 7860, path: "/health", url: "http://localhost:7860" }
+        ];
+
+        function renderServices() {
+            const grid = document.getElementById('service-grid');
+            grid.innerHTML = '';
+            services.forEach(svc => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div class="card-title">${svc.name}</div>
+                        <div class="indicator on" id="ind-${svc.name.replace(' ', '-')}"></div>
+                    </div>
+                    <div class="service-info">Port: ${svc.port}</div>
+                    <div style="display: flex; gap: 0.5rem">
+                        <a href="${svc.url}" target="_blank" class="btn btn-primary" style="flex: 1">Open App</a>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        renderServices();
+        updateBacklog();
+        setInterval(updateBacklog, 10000);
+    </script>
+</body>
+</html>
