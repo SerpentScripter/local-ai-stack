@@ -1,0 +1,34 @@
+# Node modules (from blender-toolkit)
+node_modules/
+
+# Claude local files
+.claude/*.local.md
+.claude/projects/
+.claude/sessions/
+
+# Blender toolkit local
+.blender-toolkit/skills/scripts/node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs (keep structure, ignore contents)
+*.log
+
+# Temp files
+*.tmp
+*.temp
