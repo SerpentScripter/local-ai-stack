@@ -1,0 +1,288 @@
+{
+  "name": "Backlog Channel Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "slack/events",
+        "options": {}
+      },
+      "name": "Slack Events Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "slack-events",
+      "id": "slack-webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "is-message",
+              "leftValue": "={{ $json.body.event?.type }}",
+              "rightValue": "message",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "not-bot",
+              "leftValue": "={{ $json.body.event?.bot_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "isEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Is User Message?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [450, 300],
+      "id": "check-user-message"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract message details\nconst event = $input.first().json.body.event;\n\nreturn [{\n  json: {\n    channel: event.channel,\n    user: event.user,\n    text: event.text,\n    ts: event.ts,\n    thread_ts: event.thread_ts,\n    is_thread_reply: !!event.thread_ts\n  }\n}];"
+      },
+      "name": "Extract Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 200],
+      "id": "extract-message"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "is-command",
+              "leftValue": "={{ $json.text }}",
+              "rightValue": "^(done|priority|list|help)",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Is Command?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [850, 200],
+      "id": "check-command"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:11434/api/generate",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "={{ $env.OLLAMA_MODEL_GENERAL || 'qwen2.5:14b' }}"
+            },
+            {
+              "name": "prompt",
+              "value": "You are a task assistant. Analyze this user message and convert it into a structured backlog item.\n\nUser message: \"{{ $json.text }}\"\n\nExtract:\n1. title: Short title (max 10 words)\n2. description: Fuller description if needed\n3. category: One of [Consulting Lead / Sales, Client Delivery, Security / GRC, AI / Automation, Software / App Dev, Ops / Admin / Finance, Learning / Research, Personal]\n4. priority: P0 (urgent/critical), P1 (high), P2 (normal/default), P3 (low/nice-to-have)\n5. item_type: personal, work, or mixed\n6. next_action: One concrete next step\n7. estimated_effort: S (small, <1hr), M (medium, 1-4hr), L (large, >4hr)\n8. clarifying_questions: Array of questions if the request is unclear\n\nPriority rules:\n- Default is P2\n- Words like 'urgent', 'ASAP', 'critical', 'P0' = P0\n- Words like 'important', 'soon', 'P1' = P1  \n- Words like 'eventually', 'nice to have', 'P3' = P3\n\nRespond ONLY with valid JSON:\n{\n  \"title\": \"...\",\n  \"description\": \"...\",\n  \"category\": \"...\",\n  \"priority\": \"P2\",\n  \"item_type\": \"work\",\n  \"next_action\": \"...\",\n  \"estimated_effort\": \"M\",\n  \"clarifying_questions\": [],\n  \"needs_clarification\": false\n}"
+            },
+            {
+              "name": "stream",
+              "value": "false"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Parse Task with Ollama",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1050, 300],
+      "id": "parse-task"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse LLM response and create backlog item\nconst input = $input.first().json;\nconst response = input.response;\nconst message = $('Extract Message').first().json;\n\ntry {\n  const jsonMatch = response.match(/\\{[\\s\\S]*\\}/);\n  if (!jsonMatch) throw new Error('No JSON found');\n  \n  const parsed = JSON.parse(jsonMatch[0]);\n  const externalId = 'BL-' + Date.now().toString(36).toUpperCase();\n  \n  return [{\n    json: {\n      external_id: externalId,\n      title: parsed.title,\n      description: parsed.description,\n      category: parsed.category,\n      priority: parsed.priority || 'P2',\n      item_type: parsed.item_type || 'work',\n      next_action: parsed.next_action,\n      estimated_effort: parsed.estimated_effort,\n      status: parsed.needs_clarification ? 'needs_clarification' : 'open',\n      clarifying_questions: parsed.clarifying_questions || [],\n      source_channel: message.channel,\n      source_message_ts: message.ts,\n      source_user: message.user,\n      raw_input: message.text,\n      llm_confidence: 0.8\n    }\n  }];\n} catch (e) {\n  return [{\n    json: {\n      error: e.message,\n      raw_input: message.text,\n      source_channel: message.channel,\n      source_message_ts: message.ts\n    }\n  }];\n}"
+      },
+      "name": "Create Backlog Item",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 300],
+      "id": "create-item"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "needs-clarification",
+              "leftValue": "={{ $json.clarifying_questions?.length > 0 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Needs Clarification?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1450, 300],
+      "id": "check-clarification"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "channel",
+              "value": "={{ $json.source_channel }}"
+            },
+            {
+              "name": "thread_ts",
+              "value": "={{ $json.source_message_ts }}"
+            },
+            {
+              "name": "text",
+              "value": "I need some clarification before I can add this to the backlog:\n\n{{ $json.clarifying_questions.map((q, i) => (i+1) + '. ' + q).join('\\n') }}\n\nPlease reply in this thread."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Ask Clarifying Questions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1650, 200],
+      "id": "ask-questions"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "channel",
+              "value": "={{ $json.source_channel }}"
+            },
+            {
+              "name": "thread_ts",
+              "value": "={{ $json.source_message_ts }}"
+            },
+            {
+              "name": "blocks",
+              "value": "={{ JSON.stringify([\n  {\n    \"type\": \"section\",\n    \"text\": {\n      \"type\": \"mrkdwn\",\n      \"text\": \"✅ Added to backlog: *\" + $json.title + \"*\"\n    }\n  },\n  {\n    \"type\": \"section\",\n    \"fields\": [\n      { \"type\": \"mrkdwn\", \"text\": \"*ID:* `\" + $json.external_id + \"`\" },\n      { \"type\": \"mrkdwn\", \"text\": \"*Priority:* \" + $json.priority },\n      { \"type\": \"mrkdwn\", \"text\": \"*Category:* \" + $json.category },\n      { \"type\": \"mrkdwn\", \"text\": \"*Effort:* \" + ($json.estimated_effort || 'TBD') }\n    ]\n  },\n  {\n    \"type\": \"section\",\n    \"text\": {\n      \"type\": \"mrkdwn\",\n      \"text\": \"*Next Action:* \" + ($json.next_action || 'Define next step')\n    }\n  }\n]) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Confirm Item Created",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1650, 400],
+      "id": "confirm-created"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Handle backlog commands\nconst message = $input.first().json;\nconst text = message.text.toLowerCase().trim();\n\nlet response = { command: null, args: null };\n\nif (text.startsWith('done ')) {\n  response = { command: 'done', args: text.replace('done ', '').trim() };\n} else if (text.startsWith('priority ')) {\n  const match = text.match(/priority (p[0-3]) for (.+)/i);\n  if (match) {\n    response = { command: 'priority', priority: match[1].toUpperCase(), item_id: match[2].trim() };\n  }\n} else if (text.startsWith('list')) {\n  const match = text.match(/list (top \\d+|p[0-3]|category .+)/i);\n  response = { command: 'list', filter: match ? match[1] : 'top 10' };\n} else if (text === 'help') {\n  response = { command: 'help' };\n}\n\nreturn [{ json: { ...message, ...response } }];"
+      },
+      "name": "Parse Command",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 100],
+      "id": "parse-command"
+    },
+    {
+      "parameters": {
+        "content": "## Backlog Channel Monitor\n\n**Trigger:** Slack Events webhook\n\n**Commands:**\n- `done <id>` - Mark item complete\n- `priority P0/P1/P2/P3 for <id>` - Change priority\n- `list top 10` / `list P0` - List items\n- `help` - Show commands\n\n**New Messages:**\n1. Parse with Ollama\n2. Extract structured fields\n3. Ask clarifying questions if needed\n4. Create backlog item\n5. Confirm in thread",
+        "height": 300,
+        "width": 320
+      },
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [240, 500],
+      "id": "note"
+    }
+  ],
+  "connections": {
+    "Slack Events Webhook": {
+      "main": [
+        [{ "node": "Is User Message?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Is User Message?": {
+      "main": [
+        [{ "node": "Extract Message", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Extract Message": {
+      "main": [
+        [{ "node": "Is Command?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Is Command?": {
+      "main": [
+        [{ "node": "Parse Command", "type": "main", "index": 0 }],
+        [{ "node": "Parse Task with Ollama", "type": "main", "index": 0 }]
+      ]
+    },
+    "Parse Task with Ollama": {
+      "main": [
+        [{ "node": "Create Backlog Item", "type": "main", "index": 0 }]
+      ]
+    },
+    "Create Backlog Item": {
+      "main": [
+        [{ "node": "Needs Clarification?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Needs Clarification?": {
+      "main": [
+        [{ "node": "Ask Clarifying Questions", "type": "main", "index": 0 }],
+        [{ "node": "Confirm Item Created", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": ["backlog", "slack", "tasks"]
+}

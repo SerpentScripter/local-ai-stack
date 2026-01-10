@@ -1,0 +1,237 @@
+{
+  "name": "AI Tool Watcher",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * 1"
+            }
+          ]
+        }
+      },
+      "name": "Weekly Monday 9 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300],
+      "id": "weekly-trigger"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.github.com/repos/anthropics/anthropic-cookbook/releases",
+        "options": {}
+      },
+      "name": "Check Anthropic Releases",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [450, 100],
+      "id": "check-anthropic"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.github.com/repos/ollama/ollama/releases",
+        "options": {}
+      },
+      "name": "Check Ollama Releases",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [450, 250],
+      "id": "check-ollama"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.github.com/repos/langchain-ai/langchain/releases",
+        "options": {}
+      },
+      "name": "Check LangChain Releases",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [450, 400],
+      "id": "check-langchain"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.github.com/repos/huggingface/transformers/releases",
+        "options": {}
+      },
+      "name": "Check HuggingFace Releases",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [450, 550],
+      "id": "check-hf"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combine all release data\nconst anthropic = $('Check Anthropic Releases').first()?.json || [];\nconst ollama = $('Check Ollama Releases').first()?.json || [];\nconst langchain = $('Check LangChain Releases').first()?.json || [];\nconst hf = $('Check HuggingFace Releases').first()?.json || [];\n\nconst oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);\n\nfunction getRecent(releases, repo) {\n  if (!Array.isArray(releases)) releases = [releases];\n  return releases\n    .filter(r => new Date(r.published_at) > oneWeekAgo)\n    .map(r => ({\n      repo,\n      tag: r.tag_name,\n      name: r.name,\n      published: r.published_at,\n      url: r.html_url,\n      body: r.body?.substring(0, 500) || ''\n    }));\n}\n\nconst updates = [\n  ...getRecent(anthropic, 'anthropics/anthropic-cookbook'),\n  ...getRecent(ollama, 'ollama/ollama'),\n  ...getRecent(langchain, 'langchain-ai/langchain'),\n  ...getRecent(hf, 'huggingface/transformers')\n];\n\nreturn [{ json: { updates, count: updates.length } }];"
+      },
+      "name": "Combine Updates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 300],
+      "id": "combine-updates"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-updates",
+              "leftValue": "={{ $json.count }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Has Updates?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 300],
+      "id": "check-updates"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:11434/api/generate",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "={{ $env.OLLAMA_MODEL_GENERAL || 'qwen2.5:14b' }}"
+            },
+            {
+              "name": "prompt",
+              "value": "You are an AI tools analyst. Summarize these recent releases and explain their impact on local AI workflows.\n\nReleases:\n{{ $json.updates.map(u => `- ${u.repo} ${u.tag}: ${u.name}\\n  ${u.body.substring(0, 200)}`).join('\\n\\n') }}\n\nFor each update:\n1. What's new (1-2 sentences)\n2. Impact on local AI development\n3. Action items for the user\n\nFormat for Slack with *bold* headers."
+            },
+            {
+              "name": "stream",
+              "value": "false"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Analyze with Ollama",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 200],
+      "id": "analyze-updates"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SLACK_WEBHOOK_DIGEST_AI }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "blocks",
+              "value": "={{ JSON.stringify([\n  {\n    \"type\": \"header\",\n    \"text\": {\n      \"type\": \"plain_text\",\n      \"text\": \"🔧 AI Tool Updates - Week of \" + new Date().toLocaleDateString('sv-SE')\n    }\n  },\n  {\n    \"type\": \"section\",\n    \"text\": {\n      \"type\": \"mrkdwn\",\n      \"text\": $json.response\n    }\n  },\n  {\n    \"type\": \"divider\"\n  }\n]) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Post to Slack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1300, 200],
+      "id": "post-slack"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/data/digests/ai_tools_{{ new Date().toISOString().split('T')[0] }}.md",
+        "fileContent": "={{ '# AI Tool Updates - ' + new Date().toLocaleDateString('sv-SE') + '\\n\\n' + $json.response }}"
+      },
+      "name": "Save to File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [1300, 400],
+      "id": "save-file"
+    },
+    {
+      "parameters": {
+        "content": "## AI Tool Watcher\n\n**Trigger:** Weekly (Monday 9 AM)\n\n**Monitors:**\n- Anthropic (Claude, cookbook)\n- Ollama releases\n- LangChain releases\n- HuggingFace Transformers\n\n**Process:**\n1. Check GitHub releases API\n2. Filter to last 7 days\n3. Summarize impact with LLM\n4. Post to Slack & save file",
+        "height": 280,
+        "width": 300
+      },
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [240, 500],
+      "id": "note"
+    }
+  ],
+  "connections": {
+    "Weekly Monday 9 AM": {
+      "main": [
+        [
+          { "node": "Check Anthropic Releases", "type": "main", "index": 0 },
+          { "node": "Check Ollama Releases", "type": "main", "index": 0 },
+          { "node": "Check LangChain Releases", "type": "main", "index": 0 },
+          { "node": "Check HuggingFace Releases", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Check Anthropic Releases": {
+      "main": [
+        [{ "node": "Combine Updates", "type": "main", "index": 0 }]
+      ]
+    },
+    "Check Ollama Releases": {
+      "main": [
+        [{ "node": "Combine Updates", "type": "main", "index": 0 }]
+      ]
+    },
+    "Check LangChain Releases": {
+      "main": [
+        [{ "node": "Combine Updates", "type": "main", "index": 0 }]
+      ]
+    },
+    "Check HuggingFace Releases": {
+      "main": [
+        [{ "node": "Combine Updates", "type": "main", "index": 0 }]
+      ]
+    },
+    "Combine Updates": {
+      "main": [
+        [{ "node": "Has Updates?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Has Updates?": {
+      "main": [
+        [{ "node": "Analyze with Ollama", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Analyze with Ollama": {
+      "main": [
+        [
+          { "node": "Post to Slack", "type": "main", "index": 0 },
+          { "node": "Save to File", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": ["ai-tools", "github", "monitoring"]
+}

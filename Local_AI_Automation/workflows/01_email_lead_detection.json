@@ -1,0 +1,294 @@
+{
+  "name": "Email Lead Detection",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300],
+      "id": "schedule-trigger"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://graph.microsoft.com/v1.0/users/{{ $env.M365_USER_EMAIL }}/messages",
+        "authentication": "oAuth2Api",
+        "nodeCredentialType": "microsoftOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "$filter",
+              "value": "receivedDateTime ge {{ $now.minus(5, 'minutes').toISO() }}"
+            },
+            {
+              "name": "$select",
+              "value": "id,subject,from,receivedDateTime,bodyPreview,body,importance"
+            },
+            {
+              "name": "$top",
+              "value": "50"
+            },
+            {
+              "name": "$orderby",
+              "value": "receivedDateTime desc"
+            }
+          ]
+        }
+      },
+      "name": "Get New Emails",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [450, 300],
+      "id": "get-emails"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-has-emails",
+              "leftValue": "={{ $json.value.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Has New Emails?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [650, 300],
+      "id": "check-emails"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "value",
+        "options": {}
+      },
+      "name": "Split Emails",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [850, 200],
+      "id": "split-emails"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:11434/api/generate",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "={{ $env.OLLAMA_MODEL_GENERAL || 'qwen2.5:14b' }}"
+            },
+            {
+              "name": "prompt",
+              "value": "Analyze this email and determine if it's a consulting lead/job opportunity.\n\nFrom: {{ $json.from.emailAddress.address }}\nSubject: {{ $json.subject }}\nBody: {{ $json.body.content.substring(0, 3000) }}\n\nClassify this email into ONE category:\n- CONSULTING_LEAD (consulting/contracting opportunity)\n- CUSTOMER (existing customer communication)\n- NEWSLETTER (newsletter or marketing)\n- INVOICE (financial/invoice related)\n- MEETING (meeting request/calendar)\n- ACTION_REQUIRED (needs response/action)\n- SPAM (unwanted/spam)\n- OTHER (doesn't fit other categories)\n\nIf CONSULTING_LEAD, also extract:\n- role: Job title/role\n- industry: Industry sector\n- location: Location or Remote\n- duration: Contract duration\n- start_date: Expected start\n- skills: Required skills (comma separated)\n- rate: Day rate if mentioned\n- relevance_score: 0-100 based on: IT Security, GRC, DORA, NIS2, ISO27001, Azure, Cloud Security\n- justification: Why this score\n\nRespond ONLY with valid JSON:\n{\n  \"category\": \"CATEGORY\",\n  \"is_lead\": true/false,\n  \"extraction\": { ... } // only if is_lead=true\n}"
+            },
+            {
+              "name": "stream",
+              "value": "false"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Classify with Ollama",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1050, 200],
+      "id": "classify-email"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse LLM response\nconst response = $input.first().json.response;\nconst email = $input.first().json;\n\ntry {\n  // Extract JSON from response\n  const jsonMatch = response.match(/\\{[\\s\\S]*\\}/);\n  if (!jsonMatch) {\n    throw new Error('No JSON found in response');\n  }\n  \n  const parsed = JSON.parse(jsonMatch[0]);\n  \n  return [{\n    json: {\n      email_id: email.id,\n      subject: email.subject,\n      from: email.from?.emailAddress?.address,\n      received: email.receivedDateTime,\n      category: parsed.category,\n      is_lead: parsed.is_lead || false,\n      extraction: parsed.extraction || null,\n      raw_preview: email.bodyPreview?.substring(0, 200)\n    }\n  }];\n} catch (e) {\n  return [{\n    json: {\n      email_id: email.id,\n      subject: email.subject,\n      from: email.from?.emailAddress?.address,\n      category: 'PARSE_ERROR',\n      is_lead: false,\n      error: e.message\n    }\n  }];\n}"
+      },
+      "name": "Parse Classification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 200],
+      "id": "parse-classification"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "is-lead",
+              "leftValue": "={{ $json.is_lead }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "Is Consulting Lead?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1450, 200],
+      "id": "check-lead"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "high-score",
+              "leftValue": "={{ $json.extraction?.relevance_score || 0 }}",
+              "rightValue": 50,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "name": "High Score?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1650, 100],
+      "id": "check-score"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SLACK_WEBHOOK_LEADS }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "blocks",
+              "value": "={{ JSON.stringify([\n  {\n    \"type\": \"header\",\n    \"text\": {\n      \"type\": \"plain_text\",\n      \"text\": \"🎯 New Consulting Lead (Score: \" + ($json.extraction?.relevance_score || 'N/A') + \")\"\n    }\n  },\n  {\n    \"type\": \"section\",\n    \"fields\": [\n      { \"type\": \"mrkdwn\", \"text\": \"*Role:*\\n\" + ($json.extraction?.role || 'Not specified') },\n      { \"type\": \"mrkdwn\", \"text\": \"*Industry:*\\n\" + ($json.extraction?.industry || 'Not specified') },\n      { \"type\": \"mrkdwn\", \"text\": \"*Location:*\\n\" + ($json.extraction?.location || 'Not specified') },\n      { \"type\": \"mrkdwn\", \"text\": \"*Duration:*\\n\" + ($json.extraction?.duration || 'Not specified') }\n    ]\n  },\n  {\n    \"type\": \"section\",\n    \"text\": {\n      \"type\": \"mrkdwn\",\n      \"text\": \"*Subject:* \" + $json.subject + \"\\n*From:* \" + $json.from + \"\\n*Skills:* \" + ($json.extraction?.skills || 'Not specified')\n    }\n  },\n  {\n    \"type\": \"section\",\n    \"text\": {\n      \"type\": \"mrkdwn\",\n      \"text\": \"*Justification:* \" + ($json.extraction?.justification || 'N/A')\n    }\n  },\n  {\n    \"type\": \"divider\"\n  }\n]) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Post High Lead to Slack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1850, 0],
+      "id": "post-high-lead"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SLACK_WEBHOOK_LEADS }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "📋 Low-match lead: {{ $json.subject }} (Score: {{ $json.extraction?.relevance_score || 'N/A' }}) from {{ $json.from }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Post Low Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1850, 200],
+      "id": "post-low-lead"
+    },
+    {
+      "parameters": {
+        "content": "## Email Lead Detection Workflow\n\n**Trigger:** Every 5 minutes\n\n**Process:**\n1. Fetch new emails from M365\n2. Classify each email with Ollama\n3. Extract lead details if consulting opportunity\n4. Post high-score leads to #leads-consulting\n5. Post low-score leads for review\n\n**Requirements:**\n- M365 OAuth2 credentials configured\n- Slack webhooks configured\n- Ollama running with qwen2.5:14b",
+        "height": 340,
+        "width": 320
+      },
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [240, 440],
+      "id": "note"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [{ "node": "Get New Emails", "type": "main", "index": 0 }]
+      ]
+    },
+    "Get New Emails": {
+      "main": [
+        [{ "node": "Has New Emails?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Has New Emails?": {
+      "main": [
+        [{ "node": "Split Emails", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Split Emails": {
+      "main": [
+        [{ "node": "Classify with Ollama", "type": "main", "index": 0 }]
+      ]
+    },
+    "Classify with Ollama": {
+      "main": [
+        [{ "node": "Parse Classification", "type": "main", "index": 0 }]
+      ]
+    },
+    "Parse Classification": {
+      "main": [
+        [{ "node": "Is Consulting Lead?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Is Consulting Lead?": {
+      "main": [
+        [{ "node": "High Score?", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "High Score?": {
+      "main": [
+        [{ "node": "Post High Lead to Slack", "type": "main", "index": 0 }],
+        [{ "node": "Post Low Lead", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": ["email", "leads", "automation"]
+}

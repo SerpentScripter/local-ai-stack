@@ -1,0 +1,177 @@
+{
+  "name": "Knowledge Capture System",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "capture",
+        "options": {}
+      },
+      "name": "Capture Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "knowledge-capture",
+      "id": "capture-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract and validate input\nconst body = $input.first().json.body;\n\nif (!body.content) {\n  throw new Error('Missing content field');\n}\n\nreturn [{\n  json: {\n    content: body.content,\n    source: body.source || 'webhook',\n    tags: body.tags || [],\n    title: body.title || null,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300],
+      "id": "validate-input"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:11434/api/generate",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "={{ $env.OLLAMA_MODEL_GENERAL || 'qwen2.5:14b' }}"
+            },
+            {
+              "name": "prompt",
+              "value": "You are a knowledge management assistant. Process this content into a structured knowledge note.\n\nContent:\n{{ $json.content }}\n\nSource: {{ $json.source }}\nProvided Tags: {{ $json.tags.join(', ') || 'none' }}\n\nCreate a knowledge note with:\n1. title: Clear, searchable title (if not provided)\n2. summary: 2-3 sentence summary\n3. key_points: Array of main takeaways (3-5 points)\n4. tags: Array of relevant tags (include provided + suggest more)\n5. category: One of [Security, GRC, AI/ML, Development, Cloud, Business, Personal]\n6. action_items: Any actionable items from the content\n7. related_topics: Topics this connects to\n8. confidence: How certain you are about the extraction (0.0-1.0)\n\nRespond ONLY with valid JSON."
+            },
+            {
+              "name": "stream",
+              "value": "false"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Process with Ollama",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [650, 300],
+      "id": "process-content"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse LLM response and create knowledge note\nconst input = $input.first().json;\nconst original = $('Validate Input').first().json;\n\ntry {\n  const jsonMatch = input.response.match(/\\{[\\s\\S]*\\}/);\n  if (!jsonMatch) throw new Error('No JSON found');\n  \n  const parsed = JSON.parse(jsonMatch[0]);\n  const noteId = 'KN-' + Date.now().toString(36).toUpperCase();\n  const date = new Date().toISOString().split('T')[0];\n  \n  // Create markdown content\n  const markdown = `# ${parsed.title || 'Untitled Note'}\n\n**ID:** ${noteId}  \n**Date:** ${date}  \n**Source:** ${original.source}  \n**Category:** ${parsed.category}  \n**Tags:** ${(parsed.tags || []).join(', ')}  \n**Confidence:** ${parsed.confidence || 'N/A'}\n\n## Summary\n\n${parsed.summary}\n\n## Key Points\n\n${(parsed.key_points || []).map(p => '- ' + p).join('\\n')}\n\n## Action Items\n\n${(parsed.action_items || ['None identified']).map(a => '- [ ] ' + a).join('\\n')}\n\n## Related Topics\n\n${(parsed.related_topics || []).map(t => '- ' + t).join('\\n')}\n\n---\n\n## Original Content\n\n${original.content}\n`;\n\n  return [{\n    json: {\n      note_id: noteId,\n      title: parsed.title,\n      summary: parsed.summary,\n      category: parsed.category,\n      tags: parsed.tags,\n      markdown: markdown,\n      filename: `${date}_${noteId}_${(parsed.title || 'note').toLowerCase().replace(/[^a-z0-9]+/g, '_').substring(0, 30)}.md`\n    }\n  }];\n} catch (e) {\n  return [{\n    json: {\n      error: e.message,\n      raw_content: original.content\n    }\n  }];\n}"
+      },
+      "name": "Create Knowledge Note",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300],
+      "id": "create-note"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/data/knowledge/{{ $json.filename }}",
+        "fileContent": "={{ $json.markdown }}"
+      },
+      "name": "Save Note File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [1050, 200],
+      "id": "save-note"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8765/items",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "Review: {{ $json.title }}"
+            },
+            {
+              "name": "description",
+              "value": "={{ $json.summary }}"
+            },
+            {
+              "name": "category",
+              "value": "Learning / Research"
+            },
+            {
+              "name": "priority",
+              "value": "P3"
+            },
+            {
+              "name": "item_type",
+              "value": "personal"
+            },
+            {
+              "name": "next_action",
+              "value": "Review knowledge note {{ $json.note_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Create Backlog Item",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1050, 400],
+      "id": "create-backlog"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, note_id: $json.note_id, title: $json.title, filename: $json.filename }) }}"
+      },
+      "name": "Return Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1250, 300],
+      "id": "respond"
+    },
+    {
+      "parameters": {
+        "content": "## Knowledge Capture System\n\n**Trigger:** POST /webhook/capture\n\n**Input:**\n```json\n{\n  \"content\": \"Text to capture\",\n  \"source\": \"article/meeting/idea\",\n  \"tags\": [\"optional\", \"tags\"],\n  \"title\": \"Optional title\"\n}\n```\n\n**Process:**\n1. Validate input\n2. Extract structure with LLM\n3. Generate markdown note\n4. Save to /data/knowledge/\n5. Create backlog item for review\n\n**Output:** Structured knowledge note",
+        "height": 340,
+        "width": 320
+      },
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [240, 500],
+      "id": "note"
+    }
+  ],
+  "connections": {
+    "Capture Webhook": {
+      "main": [
+        [{ "node": "Validate Input", "type": "main", "index": 0 }]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [{ "node": "Process with Ollama", "type": "main", "index": 0 }]
+      ]
+    },
+    "Process with Ollama": {
+      "main": [
+        [{ "node": "Create Knowledge Note", "type": "main", "index": 0 }]
+      ]
+    },
+    "Create Knowledge Note": {
+      "main": [
+        [
+          { "node": "Save Note File", "type": "main", "index": 0 },
+          { "node": "Create Backlog Item", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Save Note File": {
+      "main": [
+        [{ "node": "Return Success", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": ["knowledge", "capture", "notes"]
+}

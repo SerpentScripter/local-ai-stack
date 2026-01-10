@@ -1,0 +1,44 @@
+# Environment and secrets
+docker/.env
+.env
+*.secret
+
+# Database files
+data/backlog/*.db
+data/backlog/*.db-*
+
+# Test results and logs
+data/test_results/
+data/logs/
+*.log
+
+# Knowledge base (personal data)
+data/knowledge/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.egg-info/
+.eggs/
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Backup files
+*.backup_*
+*.bak
+
+# Windows artifacts
+nul
+desktop.ini

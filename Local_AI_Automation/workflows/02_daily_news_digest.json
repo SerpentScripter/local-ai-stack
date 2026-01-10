@@ -1,0 +1,288 @@
+{
+  "name": "Daily News Digest",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Daily 7 AM Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300],
+      "id": "daily-trigger"
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.RSS_FEEDS_AI_CODING }}",
+        "options": {}
+      },
+      "name": "Fetch AI Coding Feeds",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [450, 100],
+      "id": "fetch-ai-coding"
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.RSS_FEEDS_LOCAL_AI }}",
+        "options": {}
+      },
+      "name": "Fetch Local AI Feeds",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [450, 250],
+      "id": "fetch-local-ai"
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.RSS_FEEDS_SECURITY }}",
+        "options": {}
+      },
+      "name": "Fetch Security Feeds",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [450, 400],
+      "id": "fetch-security"
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.RSS_FEEDS_GRC }}",
+        "options": {}
+      },
+      "name": "Fetch GRC Feeds",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [450, 550],
+      "id": "fetch-grc"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "name": "Merge AI Feeds",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [650, 175],
+      "id": "merge-ai"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "name": "Merge Security Feeds",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [650, 475],
+      "id": "merge-security"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filter to last 24 hours and deduplicate\nconst items = $input.all();\nconst yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);\nconst seen = new Set();\n\nconst filtered = items.filter(item => {\n  const pubDate = new Date(item.json.pubDate || item.json.isoDate);\n  const title = item.json.title?.toLowerCase().trim();\n  \n  // Skip old items\n  if (pubDate < yesterday) return false;\n  \n  // Skip duplicates (by title)\n  if (seen.has(title)) return false;\n  seen.add(title);\n  \n  return true;\n}).slice(0, 20); // Max 20 items\n\nreturn filtered;"
+      },
+      "name": "Filter & Dedupe AI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 175],
+      "id": "filter-ai"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filter to last 24 hours and deduplicate\nconst items = $input.all();\nconst yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);\nconst seen = new Set();\n\nconst filtered = items.filter(item => {\n  const pubDate = new Date(item.json.pubDate || item.json.isoDate);\n  const title = item.json.title?.toLowerCase().trim();\n  \n  if (pubDate < yesterday) return false;\n  if (seen.has(title)) return false;\n  seen.add(title);\n  \n  return true;\n}).slice(0, 15);\n\nreturn filtered;"
+      },
+      "name": "Filter & Dedupe Security",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 475],
+      "id": "filter-security"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:11434/api/generate",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "={{ $env.OLLAMA_MODEL_GENERAL || 'qwen2.5:14b' }}"
+            },
+            {
+              "name": "prompt",
+              "value": "You are creating a daily AI/tech news digest for a consultant specializing in IT Security, GRC, and AI automation.\n\nArticles to summarize:\n{{ $json.map(i => '- ' + i.title + ': ' + (i.contentSnippet || i.description || '').substring(0, 200)).join('\\n') }}\n\nCreate a concise digest with:\n1. **Top Stories** (3-5 most important)\n2. **AI Coding Tools** updates\n3. **Local/Offline AI** developments\n4. **Quick Hits** (one-liner summaries of other items)\n\nFor each item:\n- 1-2 sentence summary\n- Why it matters for consulting work\n\nFormat for Slack (use *bold* and bullet points)."
+            },
+            {
+              "name": "stream",
+              "value": "false"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Generate AI Digest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1050, 175],
+      "id": "generate-ai-digest"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:11434/api/generate",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "={{ $env.OLLAMA_MODEL_GENERAL || 'qwen2.5:14b' }}"
+            },
+            {
+              "name": "prompt",
+              "value": "You are creating a daily security/GRC news digest for a consultant specializing in DORA, NIS2, ISO27001, and Azure security.\n\nArticles to summarize:\n{{ $json.map(i => '- ' + i.title + ': ' + (i.contentSnippet || i.description || '').substring(0, 200)).join('\\n') }}\n\nCreate a concise digest with:\n1. **Critical Updates** (security advisories, vulnerabilities)\n2. **Regulatory News** (DORA, NIS2, GDPR, compliance)\n3. **Cloud Security** (Azure, AWS, GCP)\n4. **Quick Hits** (one-liner summaries)\n\nFor each item:\n- 1-2 sentence summary\n- Relevance to GRC consulting\n\nFormat for Slack (use *bold* and bullet points)."
+            },
+            {
+              "name": "stream",
+              "value": "false"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Generate Security Digest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1050, 475],
+      "id": "generate-security-digest"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SLACK_WEBHOOK_DIGEST_AI }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "blocks",
+              "value": "={{ JSON.stringify([\n  {\n    \"type\": \"header\",\n    \"text\": {\n      \"type\": \"plain_text\",\n      \"text\": \"🤖 AI & Tech Daily Digest - \" + new Date().toLocaleDateString('sv-SE')\n    }\n  },\n  {\n    \"type\": \"section\",\n    \"text\": {\n      \"type\": \"mrkdwn\",\n      \"text\": $json.response\n    }\n  },\n  {\n    \"type\": \"divider\"\n  },\n  {\n    \"type\": \"context\",\n    \"elements\": [\n      {\n        \"type\": \"mrkdwn\",\n        \"text\": \"Generated by TR Automation Hub\"\n      }\n    ]\n  }\n]) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Post AI Digest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1250, 175],
+      "id": "post-ai-digest"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SLACK_WEBHOOK_DIGEST_GRC }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "blocks",
+              "value": "={{ JSON.stringify([\n  {\n    \"type\": \"header\",\n    \"text\": {\n      \"type\": \"plain_text\",\n      \"text\": \"🔒 Security & GRC Daily Digest - \" + new Date().toLocaleDateString('sv-SE')\n    }\n  },\n  {\n    \"type\": \"section\",\n    \"text\": {\n      \"type\": \"mrkdwn\",\n      \"text\": $json.response\n    }\n  },\n  {\n    \"type\": \"divider\"\n  },\n  {\n    \"type\": \"context\",\n    \"elements\": [\n      {\n        \"type\": \"mrkdwn\",\n        \"text\": \"Generated by TR Automation Hub\"\n      }\n    ]\n  }\n]) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Post Security Digest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1250, 475],
+      "id": "post-security-digest"
+    },
+    {
+      "parameters": {
+        "content": "## Daily News Digest Workflow\n\n**Trigger:** Daily at 7:00 AM\n\n**Process:**\n1. Fetch RSS feeds (AI, Local AI, Security, GRC)\n2. Filter to last 24 hours\n3. Deduplicate by title\n4. Generate summaries with Ollama\n5. Post to Slack channels\n\n**Channels:**\n- #digest-ai\n- #digest-grc",
+        "height": 260,
+        "width": 280
+      },
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [240, 700],
+      "id": "note"
+    }
+  ],
+  "connections": {
+    "Daily 7 AM Trigger": {
+      "main": [
+        [
+          { "node": "Fetch AI Coding Feeds", "type": "main", "index": 0 },
+          { "node": "Fetch Local AI Feeds", "type": "main", "index": 0 },
+          { "node": "Fetch Security Feeds", "type": "main", "index": 0 },
+          { "node": "Fetch GRC Feeds", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Fetch AI Coding Feeds": {
+      "main": [
+        [{ "node": "Merge AI Feeds", "type": "main", "index": 0 }]
+      ]
+    },
+    "Fetch Local AI Feeds": {
+      "main": [
+        [{ "node": "Merge AI Feeds", "type": "main", "index": 1 }]
+      ]
+    },
+    "Fetch Security Feeds": {
+      "main": [
+        [{ "node": "Merge Security Feeds", "type": "main", "index": 0 }]
+      ]
+    },
+    "Fetch GRC Feeds": {
+      "main": [
+        [{ "node": "Merge Security Feeds", "type": "main", "index": 1 }]
+      ]
+    },
+    "Merge AI Feeds": {
+      "main": [
+        [{ "node": "Filter & Dedupe AI", "type": "main", "index": 0 }]
+      ]
+    },
+    "Merge Security Feeds": {
+      "main": [
+        [{ "node": "Filter & Dedupe Security", "type": "main", "index": 0 }]
+      ]
+    },
+    "Filter & Dedupe AI": {
+      "main": [
+        [{ "node": "Generate AI Digest", "type": "main", "index": 0 }]
+      ]
+    },
+    "Filter & Dedupe Security": {
+      "main": [
+        [{ "node": "Generate Security Digest", "type": "main", "index": 0 }]
+      ]
+    },
+    "Generate AI Digest": {
+      "main": [
+        [{ "node": "Post AI Digest", "type": "main", "index": 0 }]
+      ]
+    },
+    "Generate Security Digest": {
+      "main": [
+        [{ "node": "Post Security Digest", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": ["digest", "news", "rss", "daily"]
+}
