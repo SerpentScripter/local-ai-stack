@@ -8,8 +8,12 @@ This is a fully offline-capable local AI stack installed on Windows.
 | Service      | URL                          | Description                    |
 |--------------|------------------------------|--------------------------------|
 | Ollama       | http://localhost:11434       | Local LLM API                  |
-| Open WebUI   | http://localhost:3000        | ChatGPT-like web interface     |
+| Open WebUI   | http://localhost:3000        | ChatGPT-like web interface (v0.7.1) |
 | Langflow     | http://localhost:7860        | Visual workflow builder        |
+| MCP Filesystem | http://127.0.0.1:9101/docs | File read/write via MCP        |
+| MCP Git      | http://127.0.0.1:9102/docs   | Git operations via MCP         |
+| MCP Playwright | http://127.0.0.1:9103/docs | Browser automation (optional)  |
+| Doc-Tools API | http://127.0.0.1:9201/docs  | OCR, PDF extraction, PDF-to-MD |
 
 ## Model Storage
 All models and data are stored under: `D:\SHARED\AI_Models\`
@@ -97,6 +101,48 @@ These are set system-wide:
 - `TRANSFORMERS_CACHE` = D:\SHARED\AI_Models\hf\transformers
 - `TORCH_HOME` = D:\SHARED\AI_Models\torch
 - `PIP_CACHE_DIR` = D:\SHARED\AI_Models\pip_cache
+
+## MCP Toolchain
+
+Tool servers exposing MCP (Model Context Protocol) capabilities via OpenAPI:
+
+### Start MCP Servers
+```powershell
+D:\SHARED\AI_Models\MCP\start_mcp_toolchain.ps1
+```
+
+### Stop MCP Servers
+```powershell
+D:\SHARED\AI_Models\MCP\stop_mcp_toolchain.ps1
+```
+
+### Start Doc-Tools API
+```powershell
+D:\SHARED\AI_Models\OPENAPI\doc-tools\start_doc_tools_api.ps1
+```
+
+### Stop Doc-Tools API
+```powershell
+D:\SHARED\AI_Models\OPENAPI\doc-tools\stop_doc_tools_api.ps1
+```
+
+### Playwright Browser
+Chromium v143.0.7499.4 is pre-installed for browser automation via MCP Playwright.
+Location: `C:\Users\X\AppData\Local\ms-playwright\`
+
+## SKILLS Library
+
+Local Claude Skills-style system for AI assistants:
+- Skills registry: `D:\SHARED\AI_Models\SKILLS\registry.json`
+- Context packs: `D:\SHARED\AI_Models\SKILLS\packs\`
+- Repo template: `D:\SHARED\AI_Models\SKILLS\repo_template\`
+
+### Bootstrap a Repository
+```powershell
+D:\SHARED\AI_Models\SKILLS\scripts\bootstrap_repo.ps1 -TargetPath "C:\Projects\my-project"
+```
+
+See `D:\SHARED\AI_Models\SKILLS\README.md` for full documentation.
 
 ## Logs
 Setup logs are stored in: `D:\SHARED\AI_Models\LOGS\`
