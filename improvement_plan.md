@@ -2,7 +2,7 @@
 
 **Created:** 2026-01-10
 **Updated:** 2026-01-10
-**Status:** Phase 1, 2, 3 & 4 COMPLETE
+**Status:** Phase 1, 2, 3, 4 & 5 COMPLETE
 
 ---
 
@@ -192,28 +192,79 @@ The local AI stack is **75% production-ready** with 6 of 8 components fully func
 
 ---
 
-## Phase 5: New Features (Week 3+)
+## Phase 5: New Features (Week 3+) ✅ COMPLETE
 
-### 5.1 Additional Skills
+### 5.1 Backup & Restore ✅
+**Priority:** MEDIUM | **Effort:** 3 hours | **Status:** DONE
 
-**5.1.1 Code Review Skill**
+**Completed:**
+- Created `D:\SHARED\AI_Models\TOOLS\backup_restore.ps1`
+- Backup categories: config, skills, secrets, logs
+- Commands: backup, restore, list, delete, verify
+- Manifest-based tracking for verification
+
+**Usage:**
+```powershell
+.\backup_restore.ps1 -Action backup -Name "pre-upgrade"
+.\backup_restore.ps1 -Action restore -Name "pre-upgrade"
+.\backup_restore.ps1 -Action list
+.\backup_restore.ps1 -Action verify -Name "pre-upgrade"
+```
+
+---
+
+### 5.2 Update Manager ✅
+**Priority:** LOW | **Effort:** 4 hours | **Status:** DONE
+
+**Completed:**
+- Created `D:\SHARED\AI_Models\TOOLS\update_manager.ps1`
+- Version checking for Ollama, Docker, Python, pip packages
+- Safe update guidance with pre-update backup
+- Rollback via backup restore
+
+**Usage:**
+```powershell
+.\update_manager.ps1 -Action check
+.\update_manager.ps1 -Action update -Component ollama
+.\update_manager.ps1 -Action rollback
+```
+
+---
+
+### 5.3 Code Review Skill ✅
+**Priority:** MEDIUM | **Effort:** 2 hours | **Status:** DONE
+
+**Completed:**
+- Created `D:\SHARED\AI_Models\SKILLS\packs\code_review\SYSTEM.md`
+- Created `D:\SHARED\AI_Models\SKILLS\packs\code_review\CHECKLISTS.md`
+- Added to registry.json as skill "code-review"
 - Model: qwen3-coder:30b
-- Tools: fs, git
-- Purpose: Automated code review with security focus
+- Tools: tr-fs, tr-git
 
-**5.1.2 Meeting Notes Skill**
+**Features:**
+- OWASP security analysis
+- Performance review
+- Code quality assessment
+- Severity-rated findings
+- Suggested fixes with rationale
+
+---
+
+### 5.4 Future Skills (Pending)
+
+**5.4.1 Meeting Notes Skill**
 - Model: qwen2.5:14b
 - Tools: fs, doc
 - Purpose: Transcription cleanup and action item extraction
 
-**5.1.3 Email Drafting Skill**
+**5.4.2 Email Drafting Skill**
 - Model: qwen2.5:14b
 - Tools: fs
 - Purpose: Professional email composition
 
 ---
 
-### 5.2 Web UI Dashboard
+### 5.5 Web UI Dashboard (Pending)
 **Priority:** LOW | **Effort:** 8 hours
 
 **Purpose:** Local web interface for service management.
@@ -224,48 +275,6 @@ The local AI stack is **75% production-ready** with 6 of 8 components fully func
 - Recent logs viewer
 - Skill browser and tester
 - System resource monitor (CPU, RAM, GPU)
-
-**Technology:**
-- FastAPI backend (extend existing)
-- Simple HTML/CSS/JS frontend
-- Run on port 9000
-
----
-
-### 5.3 Backup & Restore
-**Priority:** MEDIUM | **Effort:** 3 hours
-
-**Create:** `D:\SHARED\AI_Models\TOOLS\backup_restore.ps1`
-
-**Backup includes:**
-- All configuration files
-- Skills and context packs
-- Custom prompts
-- API keys (encrypted)
-- Docker volumes
-
-**Backup location:** `D:\SHARED\AI_Models\backups\`
-
-**Commands:**
-```powershell
-.\backup_restore.ps1 -Action backup -Name "pre-upgrade"
-.\backup_restore.ps1 -Action restore -Name "pre-upgrade"
-.\backup_restore.ps1 -Action list
-```
-
----
-
-### 5.4 Update Manager
-**Priority:** LOW | **Effort:** 4 hours
-
-**Create:** `D:\SHARED\AI_Models\TOOLS\update_manager.ps1`
-
-**Features:**
-- Check for new Open WebUI versions
-- Check for Ollama updates
-- Check for Python package updates
-- Safe update with automatic backup
-- Rollback capability
 
 ---
 
