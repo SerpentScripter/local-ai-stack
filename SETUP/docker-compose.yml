@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:8080"
+    environment:
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - WEBUI_AUTH=false
+    volumes:
+      - D:/SHARED/AI_Models/openwebui/data:/app/backend/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  langflow:
+    image: langflowai/langflow:latest
+    container_name: langflow
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:7860:7860"
+    environment:
+      - LANGFLOW_DATABASE_URL=postgresql://langflow:langflow@langflow-db:5432/langflow
+      - LANGFLOW_CONFIG_DIR=/app/langflow
+    volumes:
+      - D:/SHARED/AI_Models/langflow/data:/app/langflow
+    depends_on:
+      - langflow-db
+
+  langflow-db:
+    image: postgres:15-alpine
+    container_name: langflow-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=langflow
+      - POSTGRES_PASSWORD=langflow
+      - POSTGRES_DB=langflow
+    volumes:
+      - D:/SHARED/AI_Models/langflow/postgres:/var/lib/postgresql/data
