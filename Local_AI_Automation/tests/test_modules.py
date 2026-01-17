@@ -362,3 +362,158 @@ class TestWebhooks:
         assert not manager.validate_signature(
             webhook_id, payload, "sha256=invalid"
         )
+
+
+class TestSessionStateMachine:
+    """Tests for the session state machine"""
+
+    def test_session_states(self):
+        """Test session state enum"""
+        from api.session_state_machine import SessionState
+
+        assert SessionState.IDLE.value == "idle"
+        assert SessionState.WORKING.value == "working"
+        assert SessionState.COMPLETED.value == "completed"
+
+    def test_session_state_machine_initialization(self):
+        """Test session state machine initializes correctly"""
+        from api.session_state_machine import SessionStateMachine
+
+        machine = SessionStateMachine()
+        assert machine is not None
+
+    def test_session_creation(self):
+        """Test creating a new session"""
+        from api.session_state_machine import SessionStateMachine
+        import uuid
+
+        machine = SessionStateMachine()
+        session = machine.create_session(
+            session_id=f"test-{uuid.uuid4().hex[:8]}",
+            project_id="test-project",
+            goal="Test Session Goal",
+            agent_type="research"
+        )
+
+        assert session.session_id is not None
+        assert session.goal == "Test Session Goal"
+        assert session.state.value == "idle"
+
+    def test_session_transitions(self):
+        """Test session state transitions"""
+        from api.session_state_machine import SessionStateMachine, SessionState, SessionEvent
+        import uuid
+
+        machine = SessionStateMachine()
+        session = machine.create_session(
+            session_id=f"transition-test-{uuid.uuid4().hex[:8]}",
+            project_id="test-project",
+            goal="Transition Test",
+            agent_type="test"
+        )
+        session_id = session.session_id
+
+        # Start session
+        result = machine.transition(session_id, SessionEvent.START)
+        assert result is True
+        session = machine.get_session(session_id)
+        assert session.state == SessionState.WORKING
+
+        # Complete session
+        result = machine.transition(session_id, SessionEvent.COMPLETE)
+        assert result is True
+        session = machine.get_session(session_id)
+        assert session.state == SessionState.COMPLETED
+
+    def test_invalid_transition(self):
+        """Test invalid state transitions are rejected"""
+        from api.session_state_machine import SessionStateMachine, SessionEvent
+        import uuid
+
+        machine = SessionStateMachine()
+        session = machine.create_session(
+            session_id=f"invalid-test-{uuid.uuid4().hex[:8]}",
+            project_id="test-project",
+            goal="Invalid Test",
+            agent_type="test"
+        )
+        session_id = session.session_id
+
+        # Try to complete without starting (should return False)
+        result = machine.transition(session_id, SessionEvent.COMPLETE)
+        assert result is False  # Invalid transition returns False, doesn't raise
+
+
+class TestMCPServer:
+    """Tests for the MCP server"""
+
+    def test_mcp_server_initialization(self):
+        """Test MCP server initializes correctly"""
+        from api.mcp_server import MCPServer
+
+        server = MCPServer()
+        assert server is not None
+
+    def test_mcp_tools_registered(self):
+        """Test MCP tools are registered"""
+        from api.mcp_server import MCPServer
+
+        server = MCPServer()
+        tools = server._tools
+
+        # Check expected tools exist
+        assert "search_backlog" in tools
+        assert "create_task" in tools
+        assert "get_system_metrics" in tools
+
+    def test_mcp_initialize_handler(self):
+        """Test MCP initialize message handling"""
+        from api.mcp_server import MCPServer
+        import asyncio
+
+        server = MCPServer()
+
+        async def test():
+            message = {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {},
+                    "clientInfo": {"name": "test", "version": "1.0"}
+                }
+            }
+            response = await server.handle_message(message)
+            assert response["jsonrpc"] == "2.0"
+            assert "result" in response
+            assert response["result"]["serverInfo"]["name"] == "local-ai-hub"
+
+        asyncio.run(test())
+
+
+class TestWorktreeManager:
+    """Tests for the worktree manager"""
+
+    def test_worktree_status_enum(self):
+        """Test worktree status enum"""
+        from api.worktree_manager import WorktreeStatus
+
+        assert WorktreeStatus.CREATING.value == "creating"
+        assert WorktreeStatus.ACTIVE.value == "active"
+        assert WorktreeStatus.MERGED.value == "merged"
+
+    def test_worktree_manager_initialization(self):
+        """Test worktree manager initializes correctly"""
+        from api.worktree_manager import WorktreeManager
+
+        manager = WorktreeManager()
+        assert manager is not None
+
+    def test_list_worktrees(self):
+        """Test listing worktrees"""
+        from api.worktree_manager import WorktreeManager
+
+        manager = WorktreeManager()
+        worktrees = manager.list_worktrees()
+        assert isinstance(worktrees, list)

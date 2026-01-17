@@ -337,3 +337,133 @@ class TestSlackEndpoints:
         data = response.json()
         assert "configured" in data
         assert "features" in data
+
+
+class TestKanbanEndpoints:
+    """Test Kanban board endpoints"""
+
+    def test_get_board(self, client):
+        """Test getting the Kanban board"""
+        response = client.get("/kanban/board")
+        assert response.status_code == 200
+        data = response.json()
+        # Board returns columns directly at root level
+        assert "working" in data
+        assert "completed" in data
+        assert "idle" in data
+        assert isinstance(data["working"], list)
+
+    def test_get_states(self, client):
+        """Test getting valid session states"""
+        response = client.get("/kanban/states")
+        assert response.status_code == 200
+        data = response.json()
+        assert "states" in data
+        assert "idle" in data["states"]
+        assert "working" in data["states"]
+
+    def test_get_stats(self, client):
+        """Test getting Kanban statistics"""
+        response = client.get("/kanban/stats")
+        assert response.status_code == 200
+        data = response.json()
+        assert "total_sessions" in data
+        assert "by_state" in data
+
+    def test_create_session(self, client):
+        """Test creating a new Kanban session"""
+        import uuid
+        session_data = {
+            "session_id": f"test-session-{uuid.uuid4().hex[:8]}",
+            "project_id": "test-project",
+            "goal": "Test task for Kanban",
+            "agent_type": "research"
+        }
+        response = client.post("/kanban/sessions", json=session_data)
+        assert response.status_code == 200
+        data = response.json()
+        assert "session_id" in data
+        assert data["state"] == "idle"
+
+    def test_session_lifecycle(self, client):
+        """Test session state transitions"""
+        import uuid
+        # Create session with correct schema
+        session_data = {
+            "session_id": f"lifecycle-test-{uuid.uuid4().hex[:8]}",
+            "project_id": "test-project",
+            "goal": "Testing lifecycle",
+            "agent_type": "test"
+        }
+        create_response = client.post("/kanban/sessions", json=session_data)
+        assert create_response.status_code == 200
+        session_id = create_response.json()["session_id"]
+
+        # Start session
+        start_response = client.post(f"/kanban/sessions/{session_id}/start")
+        assert start_response.status_code == 200
+        assert start_response.json()["state"] == "working"
+
+        # Complete session
+        complete_response = client.post(f"/kanban/sessions/{session_id}/complete")
+        assert complete_response.status_code == 200
+        assert complete_response.json()["state"] == "completed"
+
+    def test_get_session(self, client):
+        """Test getting a specific session"""
+        import uuid
+        # Create session first with correct schema
+        session_id = f"get-test-{uuid.uuid4().hex[:8]}"
+        session_data = {
+            "session_id": session_id,
+            "project_id": "test-project",
+            "goal": "Get test goal",
+            "agent_type": "test"
+        }
+        create_response = client.post("/kanban/sessions", json=session_data)
+        assert create_response.status_code == 200
+
+        # Get session
+        response = client.get(f"/kanban/sessions/{session_id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["session_id"] == session_id
+        assert data["goal"] == "Get test goal"
+
+    def test_get_nonexistent_session(self, client):
+        """Test getting a session that doesn't exist"""
+        response = client.get("/kanban/sessions/nonexistent_session_id")
+        assert response.status_code == 404
+
+
+class TestWorktreeEndpoints:
+    """Test Git worktree management endpoints"""
+
+    def test_list_worktrees(self, client):
+        """Test listing worktrees"""
+        response = client.get("/worktree/")
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+
+    def test_get_statuses(self, client):
+        """Test getting valid worktree statuses"""
+        response = client.get("/worktree/statuses")
+        assert response.status_code == 200
+        data = response.json()
+        assert "statuses" in data
+        assert "descriptions" in data
+        assert "active" in data["statuses"]
+
+    def test_cleanup_endpoint(self, client):
+        """Test cleanup stale worktrees endpoint"""
+        response = client.post("/worktree/cleanup?max_age_hours=24")
+        assert response.status_code == 200
+        data = response.json()
+        assert "cleaned" in data
+        assert "message" in data
+
+    def test_get_nonexistent_worktree(self, client):
+        """Test getting a worktree that doesn't exist"""
+        response = client.get("/worktree/nonexistent_worktree_id")
+        assert response.status_code == 404

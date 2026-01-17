@@ -5,133 +5,147 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TR Local AI Hub</title>
+    <meta name="description" content="Local AI orchestration platform for managing LLMs, agents, and workflows">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/main.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 
 <body>
+    <!-- Skip Navigation Link for Accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
     <div class="container">
-        <header>
+        <header role="banner">
             <div>
                 <h1>TR Local AI Hub</h1>
                 <p style="color: var(--text-secondary)">Unified Management Dashboard</p>
             </div>
             <div class="header-controls">
-                <div class="status-badge">
+                <div class="status-badge" role="status" aria-live="polite">
                     <span>API</span>
-                    <span class="indicator" id="connection-status" title="Checking..."></span>
+                    <span class="indicator" id="connection-status" title="Checking..." aria-label="API connection status"></span>
                 </div>
-                <button class="refresh-btn" onclick="refreshAll()">Refresh All</button>
+                <button class="refresh-btn" onclick="refreshAll()" aria-label="Refresh all dashboard data">Refresh All</button>
             </div>
         </header>
 
+        <!-- Main Content -->
+        <main id="main-content" role="main">
+
         <!-- Agent Job Launcher -->
-        <div class="card" style="margin-bottom: 2rem;">
+        <section class="card" style="margin-bottom: 2rem;" aria-labelledby="agent-launcher-heading">
             <div class="module-header">
-                <h3>Start Agent Job</h3>
+                <h3 id="agent-launcher-heading">Start Agent Job</h3>
             </div>
             <div style="display: flex; gap: 1rem;">
+                <label for="agent-input" class="visually-hidden">Agent command input</label>
                 <input type="text" id="agent-input"
                     placeholder="e.g., 'Research quantum computing' or 'Create a new snake game project'"
+                    aria-describedby="agent-input-help"
                     style="flex: 1; padding: 1rem; border-radius: 0.75rem; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; font-size: 1rem;">
-                <button class="btn btn-primary" onclick="triggerAgent()">Launch</button>
+                <button class="btn btn-primary" onclick="triggerAgent()" aria-label="Launch agent job">Launch</button>
             </div>
-            <div id="agent-status" style="margin-top: 1rem; color: var(--text-secondary); font-size: 0.875rem;"></div>
-        </div>
+            <div id="agent-input-help" class="visually-hidden">Enter a research topic or project creation command</div>
+            <div id="agent-status" role="status" aria-live="polite" style="margin-top: 1rem; color: var(--text-secondary); font-size: 0.875rem;"></div>
+        </section>
 
         <!-- Main Dashboard Grid -->
-        <div class="grid-2" style="margin-bottom: 2rem;">
+        <div class="grid-2" style="margin-bottom: 2rem;" role="region" aria-label="Dashboard overview">
             <!-- Service Control Panel -->
-            <div class="module-card" id="service-control-panel">
+            <section class="module-card" id="service-control-panel" aria-labelledby="service-control-heading">
                 <div class="module-header">
-                    <h3>Service Control</h3>
-                    <button class="btn-icon" onclick="loadServices()" title="Refresh">↻</button>
+                    <h3 id="service-control-heading">Service Control</h3>
+                    <button class="btn-icon" onclick="loadServices()" title="Refresh services" aria-label="Refresh service status">↻</button>
                 </div>
-                <div class="service-grid" id="service-grid">
+                <div class="service-grid" id="service-grid" role="list" aria-live="polite">
                     <p style="color: var(--text-secondary)">Loading services...</p>
                 </div>
-            </div>
+            </section>
 
             <!-- System Monitor Panel -->
-            <div class="module-card" id="system-monitor-panel">
+            <section class="module-card" id="system-monitor-panel" aria-labelledby="system-monitor-heading">
                 <div class="module-header">
-                    <h3>System Monitor</h3>
-                    <button class="btn-icon" onclick="loadMetrics()" title="Refresh">↻</button>
+                    <h3 id="system-monitor-heading">System Monitor</h3>
+                    <button class="btn-icon" onclick="loadMetrics()" title="Refresh metrics" aria-label="Refresh system metrics">↻</button>
                 </div>
-                <div class="metrics-grid">
-                    <div class="metric-card">
+                <div class="metrics-grid" role="group" aria-label="System metrics">
+                    <div class="metric-card" role="meter" aria-label="CPU usage" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
                         <div class="metric-header">
                             <span class="metric-label">CPU</span>
-                            <span class="metric-value" id="cpu-value">--%</span>
+                            <span class="metric-value" id="cpu-value" aria-live="polite">--%</span>
                         </div>
-                        <div class="chart-container">
+                        <div class="chart-container" aria-hidden="true">
                             <canvas id="cpu-chart"></canvas>
                         </div>
                     </div>
-                    <div class="metric-card">
+                    <div class="metric-card" role="meter" aria-label="Memory usage" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
                         <div class="metric-header">
                             <span class="metric-label">Memory</span>
-                            <span class="metric-value" id="memory-value">--%</span>
+                            <span class="metric-value" id="memory-value" aria-live="polite">--%</span>
                         </div>
-                        <div class="chart-container">
+                        <div class="chart-container" aria-hidden="true">
                             <canvas id="memory-chart"></canvas>
                         </div>
                     </div>
-                    <div class="metric-card">
+                    <div class="metric-card" role="meter" aria-label="GPU usage" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
                         <div class="metric-header">
                             <span class="metric-label">GPU</span>
-                            <span class="metric-value" id="gpu-value">--</span>
+                            <span class="metric-value" id="gpu-value" aria-live="polite">--</span>
                         </div>
-                        <div class="chart-container">
+                        <div class="chart-container" aria-hidden="true">
                             <canvas id="gpu-chart"></canvas>
                         </div>
                     </div>
-                    <div class="metric-card">
+                    <div class="metric-card" role="meter" aria-label="Disk usage" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
                         <div class="metric-header">
                             <span class="metric-label">Disk</span>
-                            <span class="metric-value" id="disk-value">--%</span>
+                            <span class="metric-value" id="disk-value" aria-live="polite">--%</span>
                         </div>
-                        <div class="disk-bar">
+                        <div class="disk-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
                             <div class="disk-used" id="disk-bar-fill" style="width: 0%"></div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
         </div>
 
         <!-- LLM Chat Panel -->
-        <div class="module-card" style="margin-bottom: 2rem;">
+        <section class="module-card" style="margin-bottom: 2rem;" aria-labelledby="chat-heading">
             <div class="module-header">
-                <h3>LLM Chat</h3>
+                <h3 id="chat-heading">LLM Chat</h3>
                 <div style="display: flex; gap: 0.5rem; align-items: center;">
-                    <select id="model-selector" class="model-select">
+                    <label for="model-selector" class="visually-hidden">Select AI model</label>
+                    <select id="model-selector" class="model-select" aria-label="Select AI model">
                         <option value="">Loading models...</option>
                     </select>
-                    <button class="btn-icon" onclick="clearChat()" title="Clear">🗑</button>
+                    <button class="btn-icon" onclick="clearChat()" title="Clear chat history" aria-label="Clear chat history">🗑</button>
                 </div>
             </div>
-            <div class="chat-messages" id="chat-messages">
+            <div class="chat-messages" id="chat-messages" role="log" aria-live="polite" aria-label="Chat messages">
                 <div class="chat-welcome">
                     <p>Select a model above and start chatting with your local LLM.</p>
                 </div>
             </div>
-            <div class="chat-input-area">
-                <textarea id="chat-input" placeholder="Type your message... (Enter to send)" rows="2"></textarea>
-                <button id="chat-send-btn" class="btn btn-primary" onclick="sendChatMessage()">Send</button>
+            <div class="chat-input-area" role="form">
+                <label for="chat-input" class="visually-hidden">Chat message input</label>
+                <textarea id="chat-input" placeholder="Type your message... (Enter to send)" rows="2" aria-label="Type your message"></textarea>
+                <button id="chat-send-btn" class="btn btn-primary" onclick="sendChatMessage()" aria-label="Send message">Send</button>
             </div>
-        </div>
+        </section>
 
         <!-- Workflow Builder Panel -->
-        <div class="module-card" style="margin-bottom: 2rem;">
+        <section class="module-card" style="margin-bottom: 2rem;" aria-labelledby="workflow-heading">
             <div class="module-header">
-                <h3>Workflow Presets</h3>
-                <select id="workflow-preset-select" class="preset-select" onchange="loadWorkflowPreset(this.value)">
+                <h3 id="workflow-heading">Workflow Presets</h3>
+                <label for="workflow-preset-select" class="visually-hidden">Select workflow preset</label>
+                <select id="workflow-preset-select" class="preset-select" onchange="loadWorkflowPreset(this.value)" aria-label="Select workflow preset">
                     <option value="">Select a workflow...</option>
                 </select>
             </div>
             <div class="workflow-canvas-container">
-                <svg id="workflow-canvas" class="workflow-canvas" width="100%" height="200">
+                <svg id="workflow-canvas" class="workflow-canvas" width="100%" height="200" role="img" aria-label="Workflow diagram">
+                    <title>Workflow visualization</title>
                     <defs>
                         <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
                             <polygon points="0 0, 10 3.5, 0 7" fill="var(--accent-primary)" />
@@ -144,59 +158,62 @@
                     <p>Select a preset workflow to visualize</p>
                 </div>
             </div>
-            <div class="workflow-info" id="workflow-info" style="display: none;">
+            <div class="workflow-info" id="workflow-info" style="display: none;" role="region" aria-live="polite">
                 <div class="info-name" id="workflow-name"></div>
                 <div class="info-description" id="workflow-description"></div>
             </div>
-        </div>
+        </section>
 
         <!-- Agent Timeline Section -->
-        <div class="module-card" style="margin-bottom: 2rem;">
+        <section class="module-card" style="margin-bottom: 2rem;" aria-labelledby="timeline-heading">
             <div class="module-header">
-                <h3>Agent Execution Timeline</h3>
+                <h3 id="timeline-heading">Agent Execution Timeline</h3>
                 <div style="display: flex; gap: 0.5rem; align-items: center;">
-                    <select id="timeline-hours" class="model-select" onchange="loadTimeline()">
+                    <label for="timeline-hours" class="visually-hidden">Time range</label>
+                    <select id="timeline-hours" class="model-select" onchange="loadTimeline()" aria-label="Select time range">
                         <option value="1">Last Hour</option>
                         <option value="6">Last 6 Hours</option>
                         <option value="24" selected>Last 24 Hours</option>
                         <option value="168">Last Week</option>
                     </select>
-                    <button class="btn-icon" onclick="loadTimeline()" title="Refresh">↻</button>
+                    <button class="btn-icon" onclick="loadTimeline()" title="Refresh timeline" aria-label="Refresh timeline">↻</button>
                 </div>
             </div>
-            <div id="timeline-container" class="timeline-container">
+            <div id="timeline-container" class="timeline-container" role="list" aria-live="polite" aria-label="Agent execution history">
                 <div class="timeline-empty">
                     <p style="color: var(--text-secondary)">Loading timeline...</p>
                 </div>
             </div>
-            <div id="timeline-stats" class="timeline-stats" style="display: none;">
+            <div id="timeline-stats" class="timeline-stats" style="display: none;" role="status" aria-live="polite">
                 <span id="timeline-total"></span>
                 <span id="timeline-completed"></span>
                 <span id="timeline-failed"></span>
             </div>
-        </div>
+        </section>
 
         <!-- Backlog Section -->
-        <div class="card" style="margin-bottom: 2rem;">
+        <section class="card" style="margin-bottom: 2rem;" aria-labelledby="backlog-heading">
             <div class="section-header">
-                <h2>Active Backlog</h2>
-                <button class="btn btn-primary" onclick="alert('Coming soon')">+ New Item</button>
+                <h2 id="backlog-heading">Active Backlog</h2>
+                <button class="btn btn-primary" onclick="alert('Coming soon')" aria-label="Add new backlog item">+ New Item</button>
             </div>
-            <div style="overflow-x: auto;">
-                <table>
+            <div style="overflow-x: auto;" role="region" aria-label="Backlog items table" tabindex="0">
+                <table role="table" aria-label="Backlog items">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Priority</th>
-                            <th>Title</th>
-                            <th>Category</th>
-                            <th>Status</th>
+                            <th scope="col">ID</th>
+                            <th scope="col">Priority</th>
+                            <th scope="col">Title</th>
+                            <th scope="col">Category</th>
+                            <th scope="col">Status</th>
                         </tr>
                     </thead>
-                    <tbody id="backlog-body"></tbody>
+                    <tbody id="backlog-body" aria-live="polite"></tbody>
                 </table>
             </div>
-        </div>
+        </section>
+
+        </main><!-- End of main content -->
 
         <!-- Research & Projects -->
         <div class="grid-2">

@@ -537,11 +537,17 @@ class MCPServer:
 
     async def _tool_list_services(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """List all services"""
-        from .routes.services import get_service_status, SERVICE_REGISTRY
+        from .routes.services import SERVICES, check_service_health
 
         services = []
-        for svc_id, svc in SERVICE_REGISTRY.items():
-            status = get_service_status(svc)
+        for svc_id, svc in SERVICES.items():
+            # Check health asynchronously
+            try:
+                is_healthy = await check_service_health(svc["health_url"])
+                status = "running" if is_healthy else "stopped"
+            except Exception:
+                status = "unknown"
+
             services.append({
                 "id": svc_id,
                 "name": svc["name"],

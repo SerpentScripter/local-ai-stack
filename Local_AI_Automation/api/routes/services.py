@@ -75,9 +75,16 @@ async def check_service_health(url: str, timeout: float = 2.0) -> bool:
 @router.get("", response_model=List[dict])
 async def list_services():
     """List all services with their current status"""
+    # Parallelize health checks for better performance
+    service_items = list(SERVICES.items())
+    health_checks = [
+        check_service_health(config["health_url"])
+        for _, config in service_items
+    ]
+    health_results = await asyncio.gather(*health_checks)
+
     results = []
-    for service_id, config in SERVICES.items():
-        is_healthy = await check_service_health(config["health_url"])
+    for (service_id, config), is_healthy in zip(service_items, health_results):
         results.append({
             "id": service_id,
             "name": config["name"],

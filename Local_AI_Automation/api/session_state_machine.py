@@ -566,7 +566,7 @@ class SessionStateMachine:
                         worktree_id=row["worktree_id"] if "worktree_id" in row.keys() else None,
                         worktree_path=row["worktree_path"] if "worktree_path" in row.keys() else None,
                         branch_name=row["branch_name"] if "branch_name" in row.keys() else None,
-                        result=json.loads(row["result"]) if row.get("result") else None,
+                        result=json.loads(row["result"]) if ("result" in row.keys() and row["result"]) else None,
                         error=row["error"] if "error" in row.keys() else None
                     )
                     self._sessions[session_id] = session
