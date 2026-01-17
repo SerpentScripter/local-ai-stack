@@ -456,28 +456,30 @@ class SelfAssessmentSystem:
 
         try:
             with get_db() as conn:
-                # Get recent benchmarks
+                # Get recent benchmarks from benchmark_results table
                 rows = conn.execute("""
-                    SELECT model_name, benchmark_name, score, baseline
-                    FROM model_benchmarks
-                    WHERE tested_at >= datetime('now', '-7 days')
+                    SELECT model, benchmark_type, score, latency_ms, tokens_per_second
+                    FROM benchmark_results
+                    WHERE timestamp >= datetime('now', '-7 days')
                 """).fetchall()
 
                 if rows:
-                    total_ratio = 0
+                    total_score = 0
                     for row in rows:
-                        baseline = row["baseline"] or 50
+                        # Use 50 as baseline for comparison
+                        baseline = 50
                         ratio = min(row["score"] / baseline, 1.5)  # Cap at 150%
-                        total_ratio += ratio
+                        total_score += row["score"]
                         details["benchmarks"].append({
-                            "model": row["model_name"],
-                            "benchmark": row["benchmark_name"],
+                            "model": row["model"],
+                            "benchmark": row["benchmark_type"],
                             "score": row["score"],
                             "vs_baseline": round(ratio * 100, 1)
                         })
 
-                    avg_ratio = total_ratio / len(rows)
-                    score = min(avg_ratio * 66.7, 100)  # 1.5x baseline = 100%
+                    # Average score across all benchmarks
+                    avg_score = total_score / len(rows)
+                    score = min(avg_score, 100)
                 else:
                     # No benchmarks - neutral score
                     score = 60
