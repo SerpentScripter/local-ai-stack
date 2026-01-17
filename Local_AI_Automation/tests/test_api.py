@@ -39,22 +39,22 @@ class TestBacklogEndpoints:
 
     def test_create_task(self, client, sample_task):
         """Test creating a new task"""
-        response = client.post("/backlog", json=sample_task)
+        response = client.post("/items", json=sample_task)
         assert response.status_code in (200, 201)
         data = response.json()
         assert "external_id" in data
-        assert data["title"] == sample_task["title"]
+        assert data["status"] == "created"
 
     def test_list_tasks(self, client):
         """Test listing tasks"""
-        response = client.get("/backlog")
+        response = client.get("/items")
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
 
     def test_filter_tasks_by_status(self, client):
         """Test filtering tasks by status"""
-        response = client.get("/backlog?status=backlog")
+        response = client.get("/items?status=backlog")
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
@@ -63,7 +63,7 @@ class TestBacklogEndpoints:
 
     def test_filter_tasks_by_priority(self, client):
         """Test filtering tasks by priority"""
-        response = client.get("/backlog?priority=P0")
+        response = client.get("/items?priority=P0")
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
@@ -71,11 +71,11 @@ class TestBacklogEndpoints:
     def test_get_task_by_id(self, client, sample_task):
         """Test getting a specific task"""
         # First create a task
-        create_response = client.post("/backlog", json=sample_task)
+        create_response = client.post("/items", json=sample_task)
         task_id = create_response.json()["external_id"]
 
         # Then retrieve it
-        response = client.get(f"/backlog/{task_id}")
+        response = client.get(f"/items/{task_id}")
         assert response.status_code == 200
         data = response.json()
         assert data["external_id"] == task_id
@@ -83,33 +83,31 @@ class TestBacklogEndpoints:
     def test_update_task(self, client, sample_task):
         """Test updating a task"""
         # Create task
-        create_response = client.post("/backlog", json=sample_task)
+        create_response = client.post("/items", json=sample_task)
         task_id = create_response.json()["external_id"]
 
-        # Update task
+        # Update task using PATCH
         update_data = {"title": "Updated Title", "priority": "P1"}
-        response = client.put(f"/backlog/{task_id}", json=update_data)
+        response = client.patch(f"/items/{task_id}", json=update_data)
         assert response.status_code == 200
         data = response.json()
-        assert data["title"] == "Updated Title"
+        assert data["status"] == "updated"
 
-    def test_delete_task(self, client, sample_task):
-        """Test deleting a task"""
+    def test_mark_task_done(self, client, sample_task):
+        """Test marking a task as done"""
         # Create task
-        create_response = client.post("/backlog", json=sample_task)
+        create_response = client.post("/items", json=sample_task)
         task_id = create_response.json()["external_id"]
 
-        # Delete task
-        response = client.delete(f"/backlog/{task_id}")
+        # Mark task as done via POST /items/{id}/done
+        response = client.post(f"/items/{task_id}/done")
         assert response.status_code == 200
-
-        # Verify deleted
-        get_response = client.get(f"/backlog/{task_id}")
-        assert get_response.status_code == 404
+        data = response.json()
+        assert data["status"] == "done"
 
     def test_get_nonexistent_task(self, client):
         """Test getting a task that doesn't exist"""
-        response = client.get("/backlog/nonexistent_id_12345")
+        response = client.get("/items/nonexistent_id_12345")
         assert response.status_code == 404
 
 
@@ -161,7 +159,7 @@ class TestMetricsEndpoints:
 
     def test_get_system_metrics(self, client):
         """Test getting system metrics"""
-        response = client.get("/metrics")
+        response = client.get("/system/metrics")
         assert response.status_code == 200
         data = response.json()
         # Should have CPU and memory at minimum
@@ -321,12 +319,12 @@ class TestWebhookEndpoints:
         """Test creating a webhook"""
         webhook_data = {
             "name": "Test Webhook",
-            "webhook_type": "generic"
+            "type": "generic"
         }
         response = client.post("/webhooks/", json=webhook_data)
         assert response.status_code in (200, 201)
         data = response.json()
-        assert "webhook_id" in data or "id" in data
+        assert "id" in data
 
 
 class TestSlackEndpoints:

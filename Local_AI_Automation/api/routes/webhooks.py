@@ -61,10 +61,7 @@ class WebhookSecretResponse(BaseModel):
 # ==================== Management Endpoints ====================
 
 @router.post("/", response_model=WebhookSecretResponse)
-def create_webhook(
-    request: WebhookCreateRequest,
-    user: dict = None  # Would use Depends(require_auth) if AUTH_ENABLED
-):
+def create_webhook(data: WebhookCreateRequest):
     """
     Create a new webhook endpoint
 
@@ -73,16 +70,16 @@ def create_webhook(
     manager = get_webhook_manager()
 
     try:
-        wh_type = WebhookType(request.type)
+        wh_type = WebhookType(data.type)
     except ValueError:
         wh_type = WebhookType.GENERIC
 
     webhook = manager.create_webhook(
-        name=request.name,
+        name=data.name,
         webhook_type=wh_type,
-        description=request.description,
-        allowed_events=request.allowed_events,
-        rate_limit=request.rate_limit
+        description=data.description,
+        allowed_events=data.allowed_events,
+        rate_limit=data.rate_limit
     )
 
     return WebhookSecretResponse(
@@ -138,24 +135,24 @@ def get_webhook(webhook_id: str):
 
 
 @router.patch("/{webhook_id}", response_model=WebhookResponse)
-def update_webhook(webhook_id: str, request: WebhookUpdateRequest):
+def update_webhook(webhook_id: str, data: WebhookUpdateRequest):
     """Update webhook configuration"""
     manager = get_webhook_manager()
 
     status = None
-    if request.status:
+    if data.status:
         try:
-            status = WebhookStatus(request.status)
+            status = WebhookStatus(data.status)
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid status")
 
     webhook = manager.update_webhook(
         webhook_id,
-        name=request.name,
+        name=data.name,
         status=status,
-        description=request.description,
-        allowed_events=request.allowed_events,
-        rate_limit=request.rate_limit
+        description=data.description,
+        allowed_events=data.allowed_events,
+        rate_limit=data.rate_limit
     )
 
     if not webhook:
