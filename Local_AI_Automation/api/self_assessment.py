@@ -348,12 +348,26 @@ class SelfAssessmentSystem:
 
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
-                # Test text generation
+                # Test text generation - get first available model from Ollama
                 try:
+                    # Get available models first
+                    tags_resp = await client.get("http://localhost:11434/api/tags", timeout=5.0)
+                    models = tags_resp.json().get("models", []) if tags_resp.status_code == 200 else []
+                    # Find first non-embed model
+                    test_model = None
+                    for m in models:
+                        name = m.get("name", "")
+                        if "embed" not in name and "bge" not in name:
+                            test_model = name
+                            break
+
+                    if not test_model:
+                        test_model = "deepseek-r1:8b"  # fallback
+
                     resp = await client.post(
                         "http://localhost:11434/api/generate",
-                        json={"model": "llama3.2", "prompt": "test", "stream": False},
-                        timeout=30.0
+                        json={"model": test_model, "prompt": "hi", "stream": False},
+                        timeout=60.0
                     )
                     if resp.status_code == 200:
                         details["capabilities"]["text_generation"] = True
@@ -465,21 +479,33 @@ class SelfAssessmentSystem:
 
                 if rows:
                     total_score = 0
+                    valid_count = 0
                     for row in rows:
                         # Use 50 as baseline for comparison
                         baseline = 50
-                        ratio = min(row["score"] / baseline, 1.5)  # Cap at 150%
-                        total_score += row["score"]
+                        bench_score = row["score"]
+
+                        # Skip failed benchmarks (score of 0 indicates model failure)
+                        if bench_score > 0:
+                            ratio = min(bench_score / baseline, 1.5)  # Cap at 150%
+                            total_score += bench_score
+                            valid_count += 1
+                        else:
+                            ratio = 0
+
                         details["benchmarks"].append({
                             "model": row["model"],
                             "benchmark": row["benchmark_type"],
-                            "score": row["score"],
+                            "score": bench_score,
                             "vs_baseline": round(ratio * 100, 1)
                         })
 
-                    # Average score across all benchmarks
-                    avg_score = total_score / len(rows)
-                    score = min(avg_score, 100)
+                    # Average score across valid benchmarks only
+                    if valid_count > 0:
+                        avg_score = total_score / valid_count
+                        score = min(avg_score, 100)
+                    else:
+                        score = 60  # No valid benchmarks
                 else:
                     # No benchmarks - neutral score
                     score = 60
