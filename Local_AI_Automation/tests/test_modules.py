@@ -1,0 +1,354 @@
+"""
+Unit Tests for Core Modules
+Tests for internal module functionality
+"""
+import pytest
+from datetime import datetime, timedelta
+
+
+class TestPrioritizationEngine:
+    """Tests for the prioritization engine"""
+
+    def test_energy_levels(self):
+        """Test energy level enum values"""
+        from api.prioritization_engine import EnergyLevel
+
+        assert EnergyLevel.HIGH.value == "high"
+        assert EnergyLevel.MEDIUM.value == "medium"
+        assert EnergyLevel.LOW.value == "low"
+
+    def test_engine_initialization(self):
+        """Test engine initializes correctly"""
+        from api.prioritization_engine import PrioritizationEngine
+
+        engine = PrioritizationEngine()
+        assert engine._current_energy is not None
+
+    def test_task_scoring(self):
+        """Test task scoring function"""
+        from api.prioritization_engine import PrioritizationEngine
+
+        engine = PrioritizationEngine()
+
+        task = {
+            "external_id": "test_123",
+            "title": "Test Task",
+            "priority": "P0",
+            "status": "backlog",
+            "created_at": datetime.utcnow().isoformat()
+        }
+
+        score = engine.score_task(task, [task])
+        assert score.total_score > 0
+        assert score.task_id is not None
+        assert "priority" in score.factor_breakdown
+
+
+class TestCapabilityRegistry:
+    """Tests for the capability registry"""
+
+    def test_capability_types(self):
+        """Test capability type enum"""
+        from api.capability_registry import CapabilityType
+
+        assert CapabilityType.RESEARCH.value == "research"
+        assert CapabilityType.CODE.value == "code"
+
+    def test_registry_initialization(self):
+        """Test registry initializes"""
+        from api.capability_registry import CapabilityRegistry
+
+        registry = CapabilityRegistry()
+        assert registry is not None
+
+
+class TestMessageBus:
+    """Tests for the message bus"""
+
+    def test_message_types(self):
+        """Test message type enum"""
+        from api.message_bus import MessageType
+
+        assert MessageType.EVENT.value == "event"
+        assert MessageType.REQUEST.value == "request"
+
+    def test_topic_matching(self):
+        """Test topic pattern matching"""
+        from api.message_bus import MessageBus
+
+        bus = MessageBus()
+
+        # Exact match
+        assert bus._matches_topic("agent.started", "agent.started")
+
+        # Wildcard match
+        assert bus._matches_topic("agent.started", "agent.*")
+        assert bus._matches_topic("agent.completed", "agent.*")
+
+        # Double wildcard
+        assert bus._matches_topic("agent.research.started", "agent.#")
+
+        # Non-match
+        assert not bus._matches_topic("task.created", "agent.*")
+
+
+class TestSharedMemory:
+    """Tests for shared memory system"""
+
+    def test_memory_scope(self):
+        """Test memory scope enum"""
+        from api.shared_memory import MemoryScope
+
+        assert MemoryScope.GLOBAL.value == "global"
+        assert MemoryScope.SESSION.value == "session"
+        assert MemoryScope.AGENT.value == "agent"
+
+    def test_memory_operations(self):
+        """Test basic memory operations"""
+        from api.shared_memory import SharedMemory
+
+        memory = SharedMemory()
+
+        # Test set and get
+        memory.set("test_key", "test_value", scope_id="test")
+        value = memory.get("test_key", scope_id="test")
+        assert value == "test_value"
+
+        # Test delete
+        memory.delete("test_key", scope_id="test")
+        value = memory.get("test_key", scope_id="test")
+        assert value is None
+
+
+class TestOrchestrator:
+    """Tests for the orchestrator"""
+
+    def test_supervisor_strategy(self):
+        """Test supervisor strategy enum"""
+        from api.orchestrator import SupervisorStrategy
+
+        assert SupervisorStrategy.ONE_FOR_ONE.value == "one_for_one"
+        assert SupervisorStrategy.ONE_FOR_ALL.value == "one_for_all"
+
+    def test_agent_status(self):
+        """Test agent status enum"""
+        from api.orchestrator import AgentStatus
+
+        assert AgentStatus.PENDING.value == "pending"
+        assert AgentStatus.RUNNING.value == "running"
+        assert AgentStatus.COMPLETED.value == "completed"
+
+
+class TestEventBridge:
+    """Tests for the event bridge"""
+
+    def test_event_categories(self):
+        """Test event category enum"""
+        from api.event_bridge import EventCategory
+
+        assert EventCategory.SYSTEM.value == "system"
+        assert EventCategory.AGENT.value == "agent"
+        assert EventCategory.TASK.value == "task"
+
+    def test_event_priority(self):
+        """Test event priority enum"""
+        from api.event_bridge import EventPriority
+
+        assert EventPriority.LOW.value == 0
+        assert EventPriority.NORMAL.value == 1
+        assert EventPriority.HIGH.value == 2
+        assert EventPriority.CRITICAL.value == 3
+
+    def test_pattern_matching(self):
+        """Test event pattern matching"""
+        from api.event_bridge import EventBridge
+
+        bridge = EventBridge()
+
+        # Wildcard match
+        assert bridge._matches_pattern("task.created", "task.*")
+        assert bridge._matches_pattern("agent.completed", "agent.*")
+
+        # Catch-all
+        assert bridge._matches_pattern("anything.here", "*")
+
+        # No match
+        assert not bridge._matches_pattern("task.created", "agent.*")
+
+
+class TestWorkflowGenerator:
+    """Tests for the workflow generator"""
+
+    def test_trigger_types(self):
+        """Test trigger type enum"""
+        from api.workflow_generator import TriggerType
+
+        assert TriggerType.WEBHOOK.value == "webhook"
+        assert TriggerType.SCHEDULE.value == "schedule"
+
+    def test_action_types(self):
+        """Test action type enum"""
+        from api.workflow_generator import ActionType
+
+        assert ActionType.OLLAMA.value == "ollama"
+        assert ActionType.SLACK_MESSAGE.value == "slack_message"
+
+    def test_workflow_node_creation(self):
+        """Test workflow node creation"""
+        from api.workflow_generator import WorkflowNode
+
+        node = WorkflowNode(
+            id="test_id",
+            name="Test Node",
+            type="n8n-nodes-base.webhook",
+            parameters={"path": "/test"}
+        )
+
+        n8n_format = node.to_n8n()
+        assert n8n_format["id"] == "test_id"
+        assert n8n_format["name"] == "Test Node"
+        assert n8n_format["type"] == "n8n-nodes-base.webhook"
+
+
+class TestSelfAssessment:
+    """Tests for the self-assessment system"""
+
+    def test_assessment_grades(self):
+        """Test assessment grade enum"""
+        from api.self_assessment import AssessmentGrade
+
+        assert AssessmentGrade.A.value == "A"
+        assert AssessmentGrade.F.value == "F"
+
+    def test_score_to_grade(self):
+        """Test score to grade conversion"""
+        from api.self_assessment import SelfAssessmentSystem
+
+        system = SelfAssessmentSystem()
+
+        assert system._score_to_grade(95).value == "A"
+        assert system._score_to_grade(85).value == "B"
+        assert system._score_to_grade(75).value == "C"
+        assert system._score_to_grade(65).value == "D"
+        assert system._score_to_grade(50).value == "F"
+
+
+class TestModelBenchmarks:
+    """Tests for the model benchmark system"""
+
+    def test_benchmark_types(self):
+        """Test benchmark type enum"""
+        from api.model_benchmarks import BenchmarkType
+
+        assert BenchmarkType.COHERENCE.value == "coherence"
+        assert BenchmarkType.REASONING.value == "reasoning"
+        assert BenchmarkType.CODE_GENERATION.value == "code_generation"
+
+    def test_benchmark_result_creation(self):
+        """Test benchmark result creation"""
+        from api.model_benchmarks import BenchmarkResult, BenchmarkType
+
+        result = BenchmarkResult(
+            model="llama3.2",
+            benchmark_type=BenchmarkType.REASONING,
+            score=85.5,
+            latency_ms=1500,
+            tokens_per_second=25.5
+        )
+
+        assert result.model == "llama3.2"
+        assert result.score == 85.5
+
+
+class TestUpdateManager:
+    """Tests for the update manager"""
+
+    def test_component_types(self):
+        """Test component type enum"""
+        from api.update_manager import ComponentType
+
+        assert ComponentType.OLLAMA_MODEL.value == "ollama_model"
+        assert ComponentType.DOCKER_IMAGE.value == "docker_image"
+
+    def test_update_status(self):
+        """Test update status enum"""
+        from api.update_manager import UpdateStatus
+
+        assert UpdateStatus.PENDING.value == "pending"
+        assert UpdateStatus.COMPLETED.value == "completed"
+        assert UpdateStatus.ROLLED_BACK.value == "rolled_back"
+
+
+class TestDistributedAgents:
+    """Tests for distributed agent system"""
+
+    def test_node_status(self):
+        """Test node status enum"""
+        from api.distributed_agents import NodeStatus
+
+        assert NodeStatus.ONLINE.value == "online"
+        assert NodeStatus.OFFLINE.value == "offline"
+        assert NodeStatus.DRAINING.value == "draining"
+
+    def test_load_balance_strategy(self):
+        """Test load balancing strategy enum"""
+        from api.distributed_agents import LoadBalanceStrategy
+
+        assert LoadBalanceStrategy.ROUND_ROBIN.value == "round_robin"
+        assert LoadBalanceStrategy.LEAST_LOADED.value == "least_loaded"
+
+    def test_worker_node_capacity(self):
+        """Test worker node capacity calculation"""
+        from api.distributed_agents import WorkerNode, NodeStatus
+
+        node = WorkerNode(
+            node_id="test_node",
+            hostname="localhost",
+            address="127.0.0.1",
+            port=8765,
+            max_capacity=5,
+            current_load=2
+        )
+
+        assert node.available_capacity == 3
+        assert node.is_available is True
+
+        node.current_load = 5
+        assert node.available_capacity == 0
+
+
+class TestWebhooks:
+    """Tests for webhook system"""
+
+    def test_webhook_types(self):
+        """Test webhook type enum"""
+        from api.webhooks import WebhookType
+
+        assert WebhookType.GENERIC.value == "generic"
+        assert WebhookType.GITHUB.value == "github"
+        assert WebhookType.SLACK.value == "slack"
+
+    def test_signature_validation(self):
+        """Test webhook signature validation"""
+        from api.webhooks import WebhookManager
+        import hmac
+        import hashlib
+
+        manager = WebhookManager()
+
+        # Create a test secret and payload
+        secret = "test_secret_123"
+        payload = b'{"test": "data"}'
+
+        # Generate valid signature
+        expected_sig = hmac.new(
+            secret.encode(),
+            payload,
+            hashlib.sha256
+        ).hexdigest()
+
+        # Verify works
+        assert manager.verify_signature(payload, f"sha256={expected_sig}", secret)
+
+        # Invalid signature fails
+        assert not manager.verify_signature(payload, "sha256=invalid", secret)

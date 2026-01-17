@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Local AI Hub - Self-hosted AI orchestration platform">
+    <meta name="theme-color" content="#0f0f1a">
+
+    <title>Local AI Hub</title>
+
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Vue 3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/css/app.css">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+</head>
+<body>
+    <!-- Skip link for accessibility -->
+    <a href="#main-content" class="sr-only" style="position:absolute;top:0;left:0;padding:1rem;background:#6366f1;color:white;z-index:9999;">
+        Skip to main content
+    </a>
+
+    <!-- App mount point -->
+    <div id="app" aria-busy="true" aria-label="Loading application">
+        <!-- Loading state -->
+        <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0f0f1a;">
+            <div style="text-align:center;color:#e8e8f0;">
+                <div style="font-size:3rem;margin-bottom:1rem;">🤖</div>
+                <div style="font-size:1.25rem;margin-bottom:0.5rem;">Local AI Hub</div>
+                <div style="color:#6a6a80;">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main application script -->
+    <script src="/static/js/app.js"></script>
+
+    <!-- Accessibility: announce when app is ready -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Remove loading aria attributes once Vue mounts
+            const appEl = document.getElementById('app');
+            const observer = new MutationObserver(() => {
+                if (appEl.querySelector('.app-container')) {
+                    appEl.removeAttribute('aria-busy');
+                    appEl.removeAttribute('aria-label');
+                    observer.disconnect();
+                }
+            });
+            observer.observe(appEl, { childList: true, subtree: true });
+        });
+    </script>
+
+    <!-- Noscript fallback -->
+    <noscript>
+        <div style="padding:2rem;text-align:center;background:#1a1a2e;color:#e8e8f0;min-height:100vh;">
+            <h1>Local AI Hub</h1>
+            <p style="margin-top:1rem;color:#a0a0b8;">
+                JavaScript is required to use this application.
+                Please enable JavaScript in your browser settings.
+            </p>
+            <p style="margin-top:1rem;">
+                <a href="/docs" style="color:#6366f1;">View API Documentation</a>
+            </p>
+        </div>
+    </noscript>
+</body>
+</html>
