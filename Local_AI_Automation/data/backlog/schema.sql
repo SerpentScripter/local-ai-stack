@@ -220,3 +220,104 @@ BEGIN
     SET completed_at = CURRENT_TIMESTAMP
     WHERE id = NEW.id;
 END;
+
+-- ============================================
+-- DASHBOARD EXTENSION TABLES (Phase 1-5)
+-- ============================================
+
+-- Chat History
+CREATE TABLE IF NOT EXISTS chat_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id TEXT NOT NULL,
+    role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
+    content TEXT NOT NULL,
+    model TEXT,
+    tokens_used INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_session ON chat_history(session_id);
+CREATE INDEX IF NOT EXISTS idx_chat_time ON chat_history(created_at);
+
+-- System Metrics History
+CREATE TABLE IF NOT EXISTS system_metrics (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cpu_percent REAL NOT NULL,
+    memory_percent REAL NOT NULL,
+    memory_used_gb REAL,
+    disk_percent REAL NOT NULL,
+    disk_used_gb REAL,
+    gpu_percent REAL,
+    gpu_memory_percent REAL,
+    gpu_temp INTEGER,
+    recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_metrics_time ON system_metrics(recorded_at);
+
+-- Cleanup old metrics (keep 24 hours)
+CREATE TRIGGER IF NOT EXISTS trg_cleanup_old_metrics
+AFTER INSERT ON system_metrics
+BEGIN
+    DELETE FROM system_metrics
+    WHERE recorded_at < datetime('now', '-24 hours');
+END;
+
+-- Workflow Configurations
+CREATE TABLE IF NOT EXISTS workflow_configs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT,
+    config_json TEXT NOT NULL,
+    is_preset INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_workflow_name ON workflow_configs(name);
+
+-- Service Action Logs
+CREATE TABLE IF NOT EXISTS service_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    service_name TEXT NOT NULL,
+    action TEXT NOT NULL,
+    status TEXT,
+    message TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_service_logs_name ON service_logs(service_name);
+CREATE INDEX IF NOT EXISTS idx_service_logs_time ON service_logs(created_at);
+
+-- Research Sessions (if not exists - for agent tracking)
+CREATE TABLE IF NOT EXISTS research_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    goal TEXT NOT NULL,
+    status TEXT DEFAULT 'running',
+    knowledge_graph TEXT,
+    time_limit INTEGER DEFAULT 10,
+    start_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    end_time DATETIME
+);
+
+-- Research Findings
+CREATE TABLE IF NOT EXISTS research_findings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id INTEGER NOT NULL,
+    query TEXT,
+    source_url TEXT,
+    content TEXT,
+    relevance_score REAL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (session_id) REFERENCES research_sessions(id)
+);
+
+-- Agent Projects
+CREATE TABLE IF NOT EXISTS agent_projects (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    goal TEXT NOT NULL,
+    path TEXT,
+    status TEXT DEFAULT 'active',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);

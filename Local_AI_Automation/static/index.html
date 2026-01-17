@@ -1,202 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TR Local AI Hub</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-color: #0d0e12;
-            --card-bg: rgba(30, 32, 40, 0.7);
-            --accent-primary: #6366f1;
-            --accent-secondary: #a855f7;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --success: #22c55e;
-            --warning: #eab308;
-            --danger: #ef4444;
-            --glass-border: rgba(255, 255, 255, 0.1);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Outfit', sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.15) 0, transparent 50%);
-            color: var(--text-primary);
-            min-height: 100vh;
-            padding: 2rem;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        header {
-            margin-bottom: 3rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        h1 {
-            font-size: 2.5rem;
-            background: linear-gradient(to right, #818cf8, #c084fc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-weight: 600;
-        }
-
-        .status-badge {
-            padding: 0.5rem 1rem;
-            border-radius: 99px;
-            font-size: 0.875rem;
-            font-weight: 600;
-            background: var(--card-bg);
-            border: 1px solid var(--glass-border);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 3rem;
-        }
-
-        .card {
-            background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-            border-radius: 1.5rem;
-            padding: 1.5rem;
-            transition: transform 0.3s ease, border-color 0.3s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-            border-color: var(--accent-primary);
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-
-        .card-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-        }
-
-        .indicator {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: var(--text-secondary);
-        }
-
-        .indicator.on { background: var(--success); box-shadow: 0 0 10px var(--success); }
-        .indicator.off { background: var(--danger); }
-        .indicator.wait { background: var(--warning); }
-
-        .service-info {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            margin-bottom: 1rem;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 0.6rem 1.2rem;
-            border-radius: 0.75rem;
-            text-decoration: none;
-            font-size: 0.875rem;
-            font-weight: 600;
-            transition: all 0.2s ease;
-            cursor: pointer;
-            border: none;
-            text-align: center;
-        }
-
-        .btn-primary {
-            background: var(--accent-primary);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            filter: brightness(1.1);
-            transform: scale(1.02);
-        }
-
-        .backlog-section {
-            margin-top: 4rem;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-            background: var(--card-bg);
-            border-radius: 1rem;
-            overflow: hidden;
-        }
-
-        th {
-            text-align: left;
-            padding: 1rem;
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-secondary);
-            font-weight: 400;
-            font-size: 0.875rem;
-        }
-
-        td {
-            padding: 1rem;
-            border-bottom: 1px solid var(--glass-border);
-        }
-
-        .priority-badge {
-            padding: 0.25rem 0.5rem;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 700;
-        }
-
-        .p0 { background: rgba(239, 68, 68, 0.2); color: #f87171; }
-        .p1 { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
-        .p2 { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
-        .p3 { background: rgba(148, 163, 184, 0.2); color: #94a3b8; }
-
-        .refresh-btn {
-            background: none;
-            border: 1px solid var(--glass-border);
-            color: var(--text-secondary);
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            cursor: pointer;
-        }
-
-        footer {
-            margin-top: 4rem;
-            text-align: center;
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
+
 <body>
     <div class="container">
         <header>
@@ -204,20 +17,173 @@
                 <h1>TR Local AI Hub</h1>
                 <p style="color: var(--text-secondary)">Unified Management Dashboard</p>
             </div>
-            <button class="refresh-btn" onclick="refreshAll()">↻ Refresh All</button>
+            <div class="header-controls">
+                <div class="status-badge">
+                    <span>API</span>
+                    <span class="indicator" id="connection-status" title="Checking..."></span>
+                </div>
+                <button class="refresh-btn" onclick="refreshAll()">Refresh All</button>
+            </div>
         </header>
 
-        <div class="grid" id="service-grid">
-            <!-- Services injected here -->
+        <!-- Agent Job Launcher -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <div class="module-header">
+                <h3>Start Agent Job</h3>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <input type="text" id="agent-input"
+                    placeholder="e.g., 'Research quantum computing' or 'Create a new snake game project'"
+                    style="flex: 1; padding: 1rem; border-radius: 0.75rem; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; font-size: 1rem;">
+                <button class="btn btn-primary" onclick="triggerAgent()">Launch</button>
+            </div>
+            <div id="agent-status" style="margin-top: 1rem; color: var(--text-secondary); font-size: 0.875rem;"></div>
         </div>
 
-        <div class="backlog-section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <!-- Main Dashboard Grid -->
+        <div class="grid-2" style="margin-bottom: 2rem;">
+            <!-- Service Control Panel -->
+            <div class="module-card" id="service-control-panel">
+                <div class="module-header">
+                    <h3>Service Control</h3>
+                    <button class="btn-icon" onclick="loadServices()" title="Refresh">↻</button>
+                </div>
+                <div class="service-grid" id="service-grid">
+                    <p style="color: var(--text-secondary)">Loading services...</p>
+                </div>
+            </div>
+
+            <!-- System Monitor Panel -->
+            <div class="module-card" id="system-monitor-panel">
+                <div class="module-header">
+                    <h3>System Monitor</h3>
+                    <button class="btn-icon" onclick="loadMetrics()" title="Refresh">↻</button>
+                </div>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-label">CPU</span>
+                            <span class="metric-value" id="cpu-value">--%</span>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="cpu-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-label">Memory</span>
+                            <span class="metric-value" id="memory-value">--%</span>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="memory-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-label">GPU</span>
+                            <span class="metric-value" id="gpu-value">--</span>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="gpu-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-label">Disk</span>
+                            <span class="metric-value" id="disk-value">--%</span>
+                        </div>
+                        <div class="disk-bar">
+                            <div class="disk-used" id="disk-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LLM Chat Panel -->
+        <div class="module-card" style="margin-bottom: 2rem;">
+            <div class="module-header">
+                <h3>LLM Chat</h3>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <select id="model-selector" class="model-select">
+                        <option value="">Loading models...</option>
+                    </select>
+                    <button class="btn-icon" onclick="clearChat()" title="Clear">🗑</button>
+                </div>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <div class="chat-welcome">
+                    <p>Select a model above and start chatting with your local LLM.</p>
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <textarea id="chat-input" placeholder="Type your message... (Enter to send)" rows="2"></textarea>
+                <button id="chat-send-btn" class="btn btn-primary" onclick="sendChatMessage()">Send</button>
+            </div>
+        </div>
+
+        <!-- Workflow Builder Panel -->
+        <div class="module-card" style="margin-bottom: 2rem;">
+            <div class="module-header">
+                <h3>Workflow Presets</h3>
+                <select id="workflow-preset-select" class="preset-select" onchange="loadWorkflowPreset(this.value)">
+                    <option value="">Select a workflow...</option>
+                </select>
+            </div>
+            <div class="workflow-canvas-container">
+                <svg id="workflow-canvas" class="workflow-canvas" width="100%" height="200">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="var(--accent-primary)" />
+                        </marker>
+                    </defs>
+                    <g id="connections-layer"></g>
+                    <g id="nodes-layer"></g>
+                </svg>
+                <div class="workflow-empty" id="workflow-empty">
+                    <p>Select a preset workflow to visualize</p>
+                </div>
+            </div>
+            <div class="workflow-info" id="workflow-info" style="display: none;">
+                <div class="info-name" id="workflow-name"></div>
+                <div class="info-description" id="workflow-description"></div>
+            </div>
+        </div>
+
+        <!-- Agent Timeline Section -->
+        <div class="module-card" style="margin-bottom: 2rem;">
+            <div class="module-header">
+                <h3>Agent Execution Timeline</h3>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <select id="timeline-hours" class="model-select" onchange="loadTimeline()">
+                        <option value="1">Last Hour</option>
+                        <option value="6">Last 6 Hours</option>
+                        <option value="24" selected>Last 24 Hours</option>
+                        <option value="168">Last Week</option>
+                    </select>
+                    <button class="btn-icon" onclick="loadTimeline()" title="Refresh">↻</button>
+                </div>
+            </div>
+            <div id="timeline-container" class="timeline-container">
+                <div class="timeline-empty">
+                    <p style="color: var(--text-secondary)">Loading timeline...</p>
+                </div>
+            </div>
+            <div id="timeline-stats" class="timeline-stats" style="display: none;">
+                <span id="timeline-total"></span>
+                <span id="timeline-completed"></span>
+                <span id="timeline-failed"></span>
+            </div>
+        </div>
+
+        <!-- Backlog Section -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <div class="section-header">
                 <h2>Active Backlog</h2>
-                <a href="#" class="btn btn-primary" onclick="alert('Coming soon: Add item via UI')">+ New Item</a>
+                <button class="btn btn-primary" onclick="alert('Coming soon')">+ New Item</button>
             </div>
             <div style="overflow-x: auto;">
-                <table id="backlog-table">
+                <table>
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -227,10 +193,30 @@
                             <th>Status</th>
                         </tr>
                     </thead>
-                    <tbody id="backlog-body">
-                        <!-- Items injected here -->
-                    </tbody>
+                    <tbody id="backlog-body"></tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- Research & Projects -->
+        <div class="grid-2">
+            <div class="card">
+                <div class="module-header">
+                    <h3>Recent Research</h3>
+                    <button class="btn-icon" onclick="loadResearch()">↻</button>
+                </div>
+                <div id="research-list" style="font-size: 0.875rem; max-height: 200px; overflow-y: auto;">
+                    <p style="color: var(--text-secondary)">Loading...</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="module-header">
+                    <h3>Active Projects</h3>
+                    <button class="btn-icon" onclick="loadProjects()">↻</button>
+                </div>
+                <div id="project-list" style="font-size: 0.875rem; max-height: 200px; overflow-y: auto;">
+                    <p style="color: var(--text-secondary)">Loading...</p>
+                </div>
             </div>
         </div>
 
@@ -239,96 +225,544 @@
         </footer>
     </div>
 
+    <div id="toast-container" class="toast-container"></div>
+
     <script>
-        const API_BASE = window.location.origin;
+        const API = window.location.origin;
+        let charts = {};
+        let metricsHistory = { cpu: [], memory: [], gpu: [] };
+        let workflowPresets = [];
+        let isStreaming = false;
 
-        async function fetchStats() {
-            try {
-                const response = await fetch(`${API_BASE}/stats`);
-                return await response.json();
-            } catch (e) {
-                console.error("Failed to fetch statistics", e);
-                return null;
-            }
-        }
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('[Dashboard] Initializing...');
 
-        async function fetchItems() {
-            try {
-                const response = await fetch(`${API_BASE}/items?limit=10&status=open`);
-                return await response.json();
-            } catch (e) {
-                console.error("Failed to fetch backlog items", e);
-                return [];
-            }
-        }
+            // Check API health
+            checkHealth();
 
-        async function checkHealth(url) {
-            try {
-                const controller = new AbortController();
-                const id = setTimeout(() => controller.abort(), 2000);
-                const response = await fetch(url, { signal: controller.signal, mode: 'no-cors' });
-                clearTimeout(id);
-                return true;
-            } catch (e) {
-                return false;
-            }
-        }
+            // Load all data
+            await Promise.all([
+                loadServices(),
+                loadModels(),
+                loadWorkflowPresets(),
+                loadBacklog(),
+                loadResearch(),
+                loadProjects(),
+                loadTimeline()
+            ]);
 
-        async function refreshAll() {
-            updateBacklog();
-            // In a real app we'd ping each service from the server or here
-        }
+            // Initialize charts
+            initCharts();
 
-        async function updateBacklog() {
-            const items = await fetchItems();
-            const body = document.getElementById('backlog-body');
-            body.innerHTML = '';
-            
-            items.forEach(item => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><code>${item.external_id}</code></td>
-                    <td><span class="priority-badge ${item.priority.toLowerCase()}">${item.priority}</span></td>
-                    <td>${item.title}</td>
-                    <td style="color: var(--text-secondary); font-size: 0.85rem;">${item.category}</td>
-                    <td>${item.status}</td>
-                `;
-                body.appendChild(row);
+            // Start metrics polling
+            loadMetrics();
+            setInterval(loadMetrics, 5000);
+
+            // Refresh timeline periodically
+            setInterval(loadTimeline, 30000);
+
+            // Chat input handler
+            document.getElementById('chat-input').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendChatMessage();
+                }
             });
+
+            console.log('[Dashboard] Ready');
+        });
+
+        // ============================================
+        // HEALTH CHECK
+        // ============================================
+        async function checkHealth() {
+            const indicator = document.getElementById('connection-status');
+            try {
+                const res = await fetch(`${API}/health`);
+                if (res.ok) {
+                    indicator.className = 'indicator on';
+                    indicator.title = 'Connected';
+                } else {
+                    indicator.className = 'indicator off';
+                    indicator.title = 'Error';
+                }
+            } catch (e) {
+                indicator.className = 'indicator off';
+                indicator.title = 'Disconnected';
+            }
         }
 
-        // Mock service data for demo - in reality, server would provide this
-        const services = [
-            { name: "Ollama", port: 11434, path: "/api/tags", url: "http://localhost:11434" },
-            { name: "Open WebUI", port: 3000, path: "/", url: "http://localhost:3000" },
-            { name: "n8n", port: 5678, path: "/healthz", url: "http://localhost:5678" },
-            { name: "Backlog API", port: 8765, path: "/health", url: "http://localhost:8765" },
-            { name: "Langflow", port: 7860, path: "/health", url: "http://localhost:7860" }
-        ];
-
-        function renderServices() {
+        // ============================================
+        // SERVICES
+        // ============================================
+        async function loadServices() {
             const grid = document.getElementById('service-grid');
-            grid.innerHTML = '';
-            services.forEach(svc => {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                    <div class="card-header">
-                        <div class="card-title">${svc.name}</div>
-                        <div class="indicator on" id="ind-${svc.name.replace(' ', '-')}"></div>
+            try {
+                const services = await fetch(`${API}/services`).then(r => r.json());
+                grid.innerHTML = services.map(svc => `
+                    <div class="service-card" data-service="${svc.id}">
+                        <div class="service-header">
+                            <span class="service-name">${svc.name}</span>
+                            <span class="indicator ${svc.status === 'running' ? 'on' : 'off'}"></span>
+                        </div>
+                        <div class="service-info">
+                            <span>Port: ${svc.port}</span>
+                            <span>${svc.type}</span>
+                        </div>
+                        <div class="service-actions">
+                            <button class="btn-sm btn-success" onclick="serviceAction('${svc.id}', 'start')" ${svc.status === 'running' ? 'disabled' : ''}>Start</button>
+                            <button class="btn-sm btn-danger" onclick="serviceAction('${svc.id}', 'stop')" ${svc.status !== 'running' ? 'disabled' : ''}>Stop</button>
+                            <button class="btn-sm" onclick="serviceAction('${svc.id}', 'restart')">Restart</button>
+                        </div>
+                        ${svc.status === 'running' ? `
+                            <div class="service-links">
+                                <a href="http://localhost:${svc.port}" target="_blank" class="btn-link">Open</a>
+                            </div>
+                        ` : ''}
                     </div>
-                    <div class="service-info">Port: ${svc.port}</div>
-                    <div style="display: flex; gap: 0.5rem">
-                        <a href="${svc.url}" target="_blank" class="btn btn-primary" style="flex: 1">Open App</a>
-                    </div>
-                `;
-                grid.appendChild(card);
+                `).join('');
+            } catch (e) {
+                grid.innerHTML = '<p style="color: var(--danger)">Failed to load services</p>';
+            }
+        }
+
+        async function serviceAction(id, action) {
+            showToast(`${action}ing ${id}...`, 'info');
+            try {
+                await fetch(`${API}/services/${id}/${action}`, { method: 'POST' });
+                setTimeout(loadServices, 2000);
+            } catch (e) {
+                showToast(`Error: ${e.message}`, 'error');
+            }
+        }
+
+        // ============================================
+        // METRICS & CHARTS
+        // ============================================
+        function initCharts() {
+            if (typeof Chart === 'undefined') {
+                console.warn('[Charts] Chart.js not loaded');
+                return;
+            }
+
+            // Destroy any existing charts first
+            Object.values(charts).forEach(chart => {
+                if (chart) chart.destroy();
+            });
+            charts = {};
+
+            ['cpu', 'memory', 'gpu'].forEach(metric => {
+                const canvas = document.getElementById(`${metric}-chart`);
+                if (!canvas) return;
+
+                const container = canvas.parentElement;
+                const color = metric === 'gpu' ? '#a855f7' : metric === 'memory' ? '#22c55e' : '#6366f1';
+
+                charts[metric] = new Chart(canvas, {
+                    type: 'line',
+                    data: {
+                        labels: Array(30).fill(''),
+                        datasets: [{
+                            data: Array(30).fill(0),
+                            borderColor: color,
+                            borderWidth: 2,
+                            fill: true,
+                            backgroundColor: color + '20'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        resizeDelay: 0,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { display: false },
+                            y: { display: false, min: 0, max: 100 }
+                        },
+                        elements: {
+                            point: { radius: 0 },
+                            line: { tension: 0.4 }
+                        },
+                        animation: false
+                    }
+                });
             });
         }
 
-        renderServices();
-        updateBacklog();
-        setInterval(updateBacklog, 10000);
+        async function loadMetrics() {
+            try {
+                const m = await fetch(`${API}/system/metrics`).then(r => r.json());
+
+                document.getElementById('cpu-value').textContent = `${m.cpu_percent.toFixed(1)}%`;
+                document.getElementById('memory-value').textContent = `${m.memory_percent.toFixed(1)}%`;
+                document.getElementById('gpu-value').textContent = m.gpu_percent != null ? `${m.gpu_percent.toFixed(1)}%` : 'N/A';
+                document.getElementById('disk-value').textContent = `${m.disk_percent.toFixed(1)}%`;
+                document.getElementById('disk-bar-fill').style.width = `${m.disk_percent}%`;
+
+                // Update charts
+                ['cpu', 'memory', 'gpu'].forEach(metric => {
+                    if (!charts[metric]) return;
+                    const val = m[`${metric}_percent`] || 0;
+                    metricsHistory[metric].push(val);
+                    if (metricsHistory[metric].length > 30) metricsHistory[metric].shift();
+                    charts[metric].data.datasets[0].data = [...metricsHistory[metric]];
+                    while (charts[metric].data.datasets[0].data.length < 30) {
+                        charts[metric].data.datasets[0].data.unshift(0);
+                    }
+                    charts[metric].update('none');
+                });
+            } catch (e) {
+                console.error('[Metrics] Error:', e);
+            }
+        }
+
+        // ============================================
+        // LLM CHAT
+        // ============================================
+        async function loadModels() {
+            const select = document.getElementById('model-selector');
+            try {
+                const data = await fetch(`${API}/chat/models`).then(r => r.json());
+                const models = data.models || [];
+                select.innerHTML = models.length > 0
+                    ? models.map(m => `<option value="${m.name}">${m.name}</option>`).join('')
+                    : '<option value="">No models available</option>';
+            } catch (e) {
+                select.innerHTML = '<option value="">Error loading models</option>';
+            }
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const select = document.getElementById('model-selector');
+            const messages = document.getElementById('chat-messages');
+            const message = input.value.trim();
+            const model = select.value;
+
+            if (!message || !model || isStreaming) return;
+
+            // Remove welcome
+            const welcome = messages.querySelector('.chat-welcome');
+            if (welcome) welcome.remove();
+
+            // Add user message
+            messages.innerHTML += `
+                <div class="chat-message user">
+                    <div class="message-avatar">👤</div>
+                    <div class="message-content">${escapeHtml(message)}</div>
+                </div>
+            `;
+
+            // Add assistant placeholder
+            const assistantId = 'msg-' + Date.now();
+            messages.innerHTML += `
+                <div class="chat-message assistant streaming" id="${assistantId}">
+                    <div class="message-avatar">🤖</div>
+                    <div class="message-content">...</div>
+                </div>
+            `;
+            messages.scrollTop = messages.scrollHeight;
+
+            input.value = '';
+            isStreaming = true;
+
+            try {
+                const eventSource = new EventSource(`${API}/chat/stream?prompt=${encodeURIComponent(message)}&model=${encodeURIComponent(model)}`);
+                let fullResponse = '';
+                const contentEl = document.querySelector(`#${assistantId} .message-content`);
+
+                eventSource.onmessage = (e) => {
+                    const data = JSON.parse(e.data);
+                    if (data.error) {
+                        contentEl.textContent = 'Error: ' + data.error;
+                        eventSource.close();
+                        isStreaming = false;
+                        return;
+                    }
+                    if (data.token) {
+                        fullResponse += data.token;
+                        contentEl.innerHTML = formatMarkdown(fullResponse);
+                        messages.scrollTop = messages.scrollHeight;
+                    }
+                    if (data.done) {
+                        eventSource.close();
+                        isStreaming = false;
+                        document.getElementById(assistantId).classList.remove('streaming');
+                    }
+                };
+
+                eventSource.onerror = () => {
+                    eventSource.close();
+                    isStreaming = false;
+                    if (!fullResponse) contentEl.textContent = 'Connection error';
+                };
+            } catch (e) {
+                isStreaming = false;
+            }
+        }
+
+        function clearChat() {
+            document.getElementById('chat-messages').innerHTML = `
+                <div class="chat-welcome">
+                    <p>Chat cleared. Select a model and start a new conversation.</p>
+                </div>
+            `;
+        }
+
+        function formatMarkdown(text) {
+            return text
+                .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ============================================
+        // WORKFLOWS
+        // ============================================
+        async function loadWorkflowPresets() {
+            try {
+                workflowPresets = await fetch(`${API}/workflows/presets`).then(r => r.json());
+                const select = document.getElementById('workflow-preset-select');
+                select.innerHTML = '<option value="">Select a workflow...</option>' +
+                    workflowPresets.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+            } catch (e) {
+                console.error('[Workflows] Error:', e);
+            }
+        }
+
+        function loadWorkflowPreset(id) {
+            if (!id) {
+                document.getElementById('workflow-empty').style.display = 'block';
+                document.getElementById('workflow-info').style.display = 'none';
+                document.getElementById('nodes-layer').innerHTML = '';
+                document.getElementById('connections-layer').innerHTML = '';
+                return;
+            }
+
+            const preset = workflowPresets.find(p => p.id === id);
+            if (!preset) return;
+
+            document.getElementById('workflow-empty').style.display = 'none';
+            document.getElementById('workflow-info').style.display = 'block';
+            document.getElementById('workflow-name').textContent = preset.name;
+            document.getElementById('workflow-description').textContent = preset.description;
+
+            renderWorkflow(preset);
+        }
+
+        function renderWorkflow(workflow) {
+            const nodesLayer = document.getElementById('nodes-layer');
+            const connectionsLayer = document.getElementById('connections-layer');
+            nodesLayer.innerHTML = '';
+            connectionsLayer.innerHTML = '';
+
+            // Render nodes
+            workflow.nodes.forEach(node => {
+                const icon = { input: '📥', output: '📤', service: '🤖', agent: '🔧', tool: '🛠️' }[node.type] || '📦';
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.setAttribute('transform', `translate(${node.x}, ${node.y})`);
+                g.innerHTML = `
+                    <rect width="120" height="50" rx="8" fill="var(--card-bg-solid)" stroke="var(--glass-border)" stroke-width="2"/>
+                    <text x="15" y="32" font-size="16">${icon}</text>
+                    <text x="40" y="30" fill="var(--text-primary)" font-size="12">${node.label.substring(0, 10)}</text>
+                    <circle cx="0" cy="25" r="5" fill="var(--accent-primary)"/>
+                    <circle cx="120" cy="25" r="5" fill="var(--accent-primary)"/>
+                `;
+                nodesLayer.appendChild(g);
+            });
+
+            // Render connections
+            workflow.connections.forEach(conn => {
+                const from = workflow.nodes.find(n => n.id === conn.from);
+                const to = workflow.nodes.find(n => n.id === conn.to);
+                if (!from || !to) return;
+
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                const sx = from.x + 120, sy = from.y + 25;
+                const ex = to.x, ey = to.y + 25;
+                const dx = (ex - sx) / 2;
+                path.setAttribute('d', `M ${sx} ${sy} C ${sx + dx} ${sy}, ${ex - dx} ${ey}, ${ex} ${ey}`);
+                path.setAttribute('fill', 'none');
+                path.setAttribute('stroke', 'var(--accent-primary)');
+                path.setAttribute('stroke-width', '2');
+                path.setAttribute('marker-end', 'url(#arrowhead)');
+                connectionsLayer.appendChild(path);
+            });
+        }
+
+        // ============================================
+        // BACKLOG, RESEARCH, PROJECTS
+        // ============================================
+        async function loadBacklog() {
+            try {
+                const items = await fetch(`${API}/items?limit=10&status=open`).then(r => r.json());
+                document.getElementById('backlog-body').innerHTML = items.map(item => `
+                    <tr>
+                        <td><code>${item.external_id}</code></td>
+                        <td><span class="priority-badge ${item.priority.toLowerCase()}">${item.priority}</span></td>
+                        <td>${item.title}</td>
+                        <td style="color: var(--text-secondary)">${item.category}</td>
+                        <td>${item.status}</td>
+                    </tr>
+                `).join('') || '<tr><td colspan="5" style="color: var(--text-secondary)">No items</td></tr>';
+            } catch (e) {
+                document.getElementById('backlog-body').innerHTML = '<tr><td colspan="5" style="color: var(--danger)">Error loading backlog</td></tr>';
+            }
+        }
+
+        async function loadResearch() {
+            try {
+                const sessions = await fetch(`${API}/agent/research`).then(r => r.json());
+                document.getElementById('research-list').innerHTML = sessions.length > 0
+                    ? sessions.map(s => `<div style="margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--glass-border);"><div style="font-weight: 600; color: var(--accent-secondary);">${s.goal}</div><div style="font-size: 0.8rem; color: var(--text-secondary);">${s.status}</div></div>`).join('')
+                    : '<p style="color: var(--text-secondary)">No research sessions</p>';
+            } catch (e) {
+                document.getElementById('research-list').innerHTML = '<p style="color: var(--text-secondary)">No sessions</p>';
+            }
+        }
+
+        async function loadProjects() {
+            try {
+                const projects = await fetch(`${API}/agent/projects`).then(r => r.json());
+                document.getElementById('project-list').innerHTML = projects.length > 0
+                    ? projects.map(p => `<div style="margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--glass-border);"><div style="font-weight: 600; color: var(--success);">${p.name}</div><div style="font-size: 0.8rem; color: var(--text-secondary);">${p.goal}</div></div>`).join('')
+                    : '<p style="color: var(--text-secondary)">No active projects</p>';
+            } catch (e) {
+                document.getElementById('project-list').innerHTML = '<p style="color: var(--text-secondary)">No projects</p>';
+            }
+        }
+
+        // ============================================
+        // AGENT TIMELINE
+        // ============================================
+        async function loadTimeline() {
+            const container = document.getElementById('timeline-container');
+            const stats = document.getElementById('timeline-stats');
+            const hours = document.getElementById('timeline-hours')?.value || 24;
+
+            try {
+                const data = await fetch(`${API}/orchestration/timeline?hours=${hours}&limit=50`).then(r => r.json());
+
+                if (data.events && data.events.length > 0) {
+                    container.innerHTML = data.events.map(event => {
+                        const icon = event.type === 'agent_execution' ? '🤖' : '⚙️';
+                        const timeStr = formatTimeAgo(event.start_time);
+                        const duration = event.end_time ? formatDuration(event.start_time, event.end_time) : 'Running...';
+
+                        return `
+                            <div class="timeline-event type-${event.type} status-${event.status}">
+                                <div class="timeline-icon">${icon}</div>
+                                <div class="timeline-content">
+                                    <div class="timeline-title" title="${event.details?.goal || event.title}">${event.title}</div>
+                                    <div class="timeline-meta">
+                                        <span class="timeline-time">${timeStr}</span>
+                                        <span class="timeline-status ${event.status}">${event.status}</span>
+                                        <span>${duration}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    // Update stats
+                    const completed = data.events.filter(e => e.status === 'completed' || e.status === 'finished').length;
+                    const failed = data.events.filter(e => e.status === 'failed').length;
+
+                    stats.style.display = 'flex';
+                    document.getElementById('timeline-total').innerHTML = `<span class="dot total"></span> Total: ${data.count}`;
+                    document.getElementById('timeline-completed').innerHTML = `<span class="dot completed"></span> Completed: ${completed}`;
+                    document.getElementById('timeline-failed').innerHTML = `<span class="dot failed"></span> Failed: ${failed}`;
+                } else {
+                    container.innerHTML = '<div class="timeline-empty"><p style="color: var(--text-secondary)">No agent activity in this time period</p></div>';
+                    stats.style.display = 'none';
+                }
+            } catch (e) {
+                container.innerHTML = '<div class="timeline-empty"><p style="color: var(--text-secondary)">Timeline data unavailable</p></div>';
+                stats.style.display = 'none';
+            }
+        }
+
+        function formatTimeAgo(isoString) {
+            if (!isoString) return 'Unknown';
+            const date = new Date(isoString);
+            const now = new Date();
+            const diff = Math.floor((now - date) / 1000);
+
+            if (diff < 60) return 'Just now';
+            if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+            if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+            return `${Math.floor(diff / 86400)}d ago`;
+        }
+
+        function formatDuration(start, end) {
+            if (!start || !end) return '';
+            const diff = Math.floor((new Date(end) - new Date(start)) / 1000);
+            if (diff < 60) return `${diff}s`;
+            if (diff < 3600) return `${Math.floor(diff / 60)}m ${diff % 60}s`;
+            return `${Math.floor(diff / 3600)}h ${Math.floor((diff % 3600) / 60)}m`;
+        }
+
+        // ============================================
+        // AGENT LAUNCHER
+        // ============================================
+        async function triggerAgent() {
+            const input = document.getElementById('agent-input');
+            const status = document.getElementById('agent-status');
+            const prompt = input.value.trim();
+            if (!prompt) return;
+
+            status.innerHTML = 'Analyzing intent...';
+            try {
+                const route = await fetch(`${API}/agent/router?prompt=${encodeURIComponent(prompt)}`, { method: 'POST' }).then(r => r.json());
+                status.innerHTML = `Intent: <strong>${route.intent}</strong>`;
+
+                if (route.intent === 'RESEARCH') {
+                    await fetch(`${API}/agent/research?goal=${encodeURIComponent(prompt)}&limit=10`, { method: 'POST' });
+                    status.innerHTML += ' → Started Research Agent';
+                    input.value = '';
+                } else if (route.intent === 'PROJECT') {
+                    await fetch(`${API}/agent/project?goal=${encodeURIComponent(prompt)}`, { method: 'POST' });
+                    status.innerHTML += ' → Started Project Agent';
+                    input.value = '';
+                }
+            } catch (e) {
+                status.innerHTML = `Error: ${e.message}`;
+            }
+        }
+
+        // ============================================
+        // UTILITIES
+        // ============================================
+        function refreshAll() {
+            loadServices();
+            loadMetrics();
+            loadModels();
+            loadBacklog();
+            loadResearch();
+            loadProjects();
+            loadTimeline();
+            checkHealth();
+            showToast('Refreshed all data', 'success');
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `<span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
     </script>
 </body>
 </html>

@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "local-ai-hub": {
+      "command": "python",
+      "args": [
+        "D:\\SHARED\\Projects\\llm_install\\local-ai-stack\\Local_AI_Automation\\scripts\\mcp_server.py"
+      ],
+      "env": {
+        "PYTHONPATH": "D:\\SHARED\\Projects\\llm_install\\local-ai-stack\\Local_AI_Automation"
+      }
+    }
+  }
+}

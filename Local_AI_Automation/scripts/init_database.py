@@ -137,6 +137,50 @@ def create_schema(cursor):
     CREATE INDEX IF NOT EXISTS idx_backlog_status ON backlog_items(status);
     CREATE INDEX IF NOT EXISTS idx_backlog_priority ON backlog_items(priority);
     CREATE INDEX IF NOT EXISTS idx_backlog_category ON backlog_items(category);
+
+    -- Research Sessions
+    CREATE TABLE IF NOT EXISTS research_sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        goal TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'active',
+        start_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+        end_time DATETIME,
+        time_limit_minutes INTEGER,
+        knowledge_graph TEXT
+    );
+
+    -- Research Findings
+    CREATE TABLE IF NOT EXISTS research_findings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id INTEGER NOT NULL,
+        finding TEXT NOT NULL,
+        source TEXT,
+        confidence_score REAL,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (session_id) REFERENCES research_sessions(id)
+    );
+
+    -- Agent Projects
+    CREATE TABLE IF NOT EXISTS agent_projects (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        path TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'planning',
+        goal TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Agent Logs
+    CREATE TABLE IF NOT EXISTS agent_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER,
+        session_id INTEGER,
+        message TEXT NOT NULL,
+        log_type TEXT NOT NULL DEFAULT 'info',
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES agent_projects(id),
+        FOREIGN KEY (session_id) REFERENCES research_sessions(id)
+    );
     """)
 
 def add_sample_items():
